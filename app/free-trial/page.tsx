@@ -56,7 +56,7 @@ export default function FreeTrialPage() {
                   2
                 </div>
                 <div>
-                  <strong className="text-slate-900">Meet the Faculty:</strong> Interact directly with Rajesh Sir (Math) or Ananya Ma&apos;am (Science) and ask any subject doubt.
+                  <strong className="text-slate-900">Meet the Faculty:</strong> Interact directly with Praveen Gandhi Sir (Math) or Rashmi Anand Ma&apos;am (Science) and ask any subject doubt.
                 </div>
               </div>
 

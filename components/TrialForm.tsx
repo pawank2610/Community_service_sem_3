@@ -21,7 +21,7 @@ export default function TrialForm({ initialCourse, onSuccess }: TrialFormProps) 
     phone: '',
     whatsapp: '',
     preferredTiming: 'Evening (5:30 PM)',
-    preferredTeacher: 'Rajesh Sharma',
+    preferredTeacher: 'Praveen Gandhi',
     message: '',
   });
 
@@ -252,8 +252,8 @@ export default function TrialForm({ initialCourse, onSuccess }: TrialFormProps) 
               onChange={(e) => setFormData({ ...formData, preferredTeacher: e.target.value })}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-prime-orange focus:border-prime-orange text-sm outline-none transition bg-white"
             >
-              <option value="Rajesh Sharma">Rajesh Sharma (Mathematics)</option>
-              <option value="Ananya Verma">Ananya Verma (Science / Physics)</option>
+              <option value="Praveen Gandhi">Praveen Gandhi (Mathematics)</option>
+              <option value="Rashmi Anand">Rashmi Anand (Science & Primary All Subjects)</option>
               <option value="Any Teacher">Any Available Teacher</option>
             </select>
           </div>

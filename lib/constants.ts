@@ -1,16 +1,16 @@
 import { InstituteSettings } from './types';
 
 export const DEFAULT_SETTINGS: InstituteSettings = {
-  name: 'Prime Learning',
-  tagline: 'Quality Coaching, Personal Attention & Focused Academic Growth',
-  locationName: 'Indiranagar, Bangalore', // Easily configurable for local SEO
-  address: 'No. 45, 10th Main Road, 80 Feet Road, Indiranagar, Bangalore - 560038',
-  landmark: 'Near Indiranagar Metro Station & BDA Complex',
-  phone: '+91 98765 43210',
-  whatsappNumber: '+919876543210',
+  name: 'Prime Learning Classes',
+  tagline: 'Maths, Science & All-Subject Tutoring | Quality Coaching & Personal Attention',
+  locationName: 'Sec-22B, Gurgaon', // Easily configurable for local SEO
+  address: '948, Sec-22B, Near Anand Farm, Gurgaon',
+  landmark: 'Near Anand Farm',
+  phone: '+91 98109 89437',
+  whatsappNumber: '+919810989437',
   email: 'info@primelearning.edu.in',
   openingHours: 'Mon - Sat: 3:00 PM - 8:30 PM | Sun: 9:00 AM - 1:00 PM',
-  googleMapsEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.954778107936!2d77.63821037592429!3d12.974735314798363!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae16a72e946a39%3A0x6b6c0e0b3bf1f022!2sIndiranagar%2C%20Bengaluru%2C%20Karnataka!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
+  googleMapsEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3506.723485741639!2d77.0658423!3d28.5029315!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d199c0d16ff1b%3A0x6b4fb6c1a8d11c0!2sSector%2022B%2C%20Gurugram%2C%20Haryana!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
   whatsappCommunityUrl: 'https://chat.whatsapp.com/PrimeLearningCommunityDemo',
   trialSlotsAvailable: 8,
 };

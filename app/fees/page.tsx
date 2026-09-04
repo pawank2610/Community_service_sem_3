@@ -76,7 +76,7 @@ export default function FeesPage() {
                     <td className="p-4 font-black text-slate-900 text-base">{course.monthlyFee}</td>
                     <td className="p-4">Max 15 Students ({course.availableSeats} Seats Left)</td>
                     <td className="p-4 font-semibold">
-                      {course.subject.includes('Math') ? 'Rajesh Sharma' : 'Ananya Verma'}
+                      {course.subject.includes('Math') ? 'Praveen Gandhi' : 'Rashmi Anand'}
                     </td>
                     <td className="p-4 flex items-center space-x-2">
                       <button

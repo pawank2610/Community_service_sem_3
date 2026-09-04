@@ -15,7 +15,7 @@ export default function StudentDashboardView() {
     grade: 'Class 10',
     subjects: ['Mathematics'],
     batchName: 'Batch M10-A (Class 10 Math)',
-    teacherName: 'Rajesh Sharma',
+    teacherName: 'Praveen Gandhi',
   };
 
   const attendance = db.getAttendance().filter(a => a.studentId === student.id);
