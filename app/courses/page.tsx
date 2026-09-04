@@ -49,7 +49,7 @@ export default function CoursesPage() {
 
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
-            {['All', 'Class 6 - 8', 'Class 9 - 10', 'Class 11 - 12'].map((flt) => (
+            {['All', 'Class 1 - 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((flt) => (
               <button
                 key={flt}
                 onClick={() => setGradeFilter(flt)}
