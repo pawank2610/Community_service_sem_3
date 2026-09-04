@@ -3,26 +3,31 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
-  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode
+  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { 
   Enquiry, TrialRegistration, Student, Batch, Course, Teacher, 
-  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus 
+  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial 
 } from '@/lib/types';
 import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function AdminDashboardView() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'enquiries' | 'trials' | 'students' | 'batches' | 'courses' | 'attendance' | 'marks' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'settings'
+  >('overview');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   
   // Data states
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [trials, setTrials] = useState<TrialRegistration[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [settings, setSettings] = useState<InstituteSettings>(db.getSettings());
 
   // Search & Filter state
@@ -46,6 +51,37 @@ export default function AdminDashboardView() {
     remarks: 'Great concept understanding.',
   });
 
+  // Modal States
+  const [addStudentModal, setAddStudentModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    studentName: '', parentName: '', grade: 'Class 10', subjects: 'Maths & Science', phone: '', whatsapp: '', batchId: '', teacherName: 'Praveen Gandhi & Rashmi Anand'
+  });
+
+  const [addTeacherModal, setAddTeacherModal] = useState(false);
+  const [newTeacher, setNewTeacher] = useState({
+    name: '', qualification: 'M.Sc.', experience: '5+ Years', subjects: 'Mathematics', classesTaught: 'Class 9 - 12', bio: '', philosophy: ''
+  });
+
+  const [addBatchModal, setAddBatchModal] = useState(false);
+  const [newBatch, setNewBatch] = useState({
+    name: '', grade: 'Class 10', subject: 'Mathematics', teacherName: 'Praveen Gandhi', days: 'Mon, Wed, Fri', startTime: '5:00 PM', endTime: '6:30 PM', room: 'Room 101', maxStudents: 15
+  });
+
+  const [addCourseModal, setAddCourseModal] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    grade: 'Class 10', subject: 'Maths & Science (Combined)', description: '', batchTiming: 'Mon to Sat (Alternate Days) | 5:00 PM - 6:30 PM', monthlyFee: '₹4,500 / month', availableSeats: 5
+  });
+
+  const [addAnnouncementModal, setAddAnnouncementModal] = useState(false);
+  const [newAnnouncement, setNewAnnouncement] = useState({
+    title: '', content: '', targetGrade: 'All Classes', author: 'Admin'
+  });
+
+  const [addMaterialModal, setAddMaterialModal] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({
+    title: '', subject: 'Mathematics', grade: 'Class 10', fileType: 'PDF Document', downloadUrl: '#'
+  });
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,8 +92,11 @@ export default function AdminDashboardView() {
     setEnquiries(db.getEnquiries());
     setTrials(db.getTrials());
     setStudents(db.getStudents());
+    setTeachers(db.getTeachers());
     setBatches(db.getBatches());
     setCourses(db.getCourses());
+    setAnnouncements(db.getAnnouncements());
+    setMaterials(db.getStudyMaterials());
     setSettings(db.getSettings());
   };
 
@@ -73,10 +112,26 @@ export default function AdminDashboardView() {
     showToast(`Enquiry status updated to ${status}`);
   };
 
+  const handleDeleteEnquiry = (id: string) => {
+    if (confirm('Are you sure you want to remove this enquiry?')) {
+      db.deleteEnquiry(id);
+      refreshData();
+      showToast('Enquiry removed.');
+    }
+  };
+
   const handleUpdateTrialStatus = (id: string, status: TrialStatus) => {
     db.updateTrialStatus(id, status);
     refreshData();
     showToast(`Trial status updated to ${status}`);
+  };
+
+  const handleDeleteTrial = (id: string) => {
+    if (confirm('Are you sure you want to remove this trial registration?')) {
+      db.deleteTrial(id);
+      refreshData();
+      showToast('Trial registration removed.');
+    }
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -84,6 +139,158 @@ export default function AdminDashboardView() {
     db.saveSettings(settings);
     refreshData();
     showToast('Institute settings updated successfully!');
+  };
+
+  // CRUD Handlers
+  const handleAddStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    const batch = batches.find(b => b.id === newStudent.batchId) || batches[0];
+    db.addStudent({
+      studentName: newStudent.studentName,
+      parentName: newStudent.parentName,
+      grade: newStudent.grade,
+      subjects: newStudent.subjects.split(',').map(s => s.trim()),
+      phone: newStudent.phone,
+      whatsapp: newStudent.whatsapp || newStudent.phone,
+      batchId: batch ? batch.id : 'batch-1',
+      batchName: batch ? batch.name : 'Class 10 Batch',
+      teacherName: newStudent.teacherName,
+    });
+    setAddStudentModal(false);
+    refreshData();
+    showToast(`Added new student: ${newStudent.studentName}`);
+  };
+
+  const handleDeleteStudent = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove student "${name}"?`)) {
+      db.deleteStudent(id);
+      refreshData();
+      showToast(`Removed student ${name}`);
+    }
+  };
+
+  const handleAddTeacher = (e: React.FormEvent) => {
+    e.preventDefault();
+    db.addTeacher({
+      name: newTeacher.name,
+      qualification: newTeacher.qualification,
+      experience: newTeacher.experience,
+      subjects: newTeacher.subjects.split(',').map(s => s.trim()),
+      classesTaught: newTeacher.classesTaught.split(',').map(s => s.trim()),
+      teachingPhilosophy: newTeacher.philosophy || 'Concept-focused interactive learning.',
+      areasOfExpertise: [newTeacher.subjects, 'Board Exam Preparation'],
+      achievements: ['Guided 100+ students to top grades'],
+      photoUrl: '/images/teacher-rajesh.jpg',
+      bio: newTeacher.bio || 'Dedicated educator.',
+      studentFeedback: [],
+    });
+    setAddTeacherModal(false);
+    refreshData();
+    showToast(`Added new faculty: ${newTeacher.name}`);
+  };
+
+  const handleDeleteTeacher = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove faculty "${name}"?`)) {
+      db.deleteTeacher(id);
+      refreshData();
+      showToast(`Removed faculty ${name}`);
+    }
+  };
+
+  const handleAddBatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    db.addBatch({
+      name: newBatch.name,
+      grade: newBatch.grade,
+      subject: newBatch.subject,
+      teacherId: 'teacher-praveen',
+      teacherName: newBatch.teacherName,
+      days: newBatch.days,
+      startTime: newBatch.startTime,
+      endTime: newBatch.endTime,
+      room: newBatch.room,
+      maxStudents: Number(newBatch.maxStudents),
+      status: 'Active',
+    });
+    setAddBatchModal(false);
+    refreshData();
+    showToast(`Created batch: ${newBatch.name}`);
+  };
+
+  const handleDeleteBatch = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove batch "${name}"?`)) {
+      db.deleteBatch(id);
+      refreshData();
+      showToast(`Removed batch ${name}`);
+    }
+  };
+
+  const handleAddCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    db.addCourse({
+      grade: newCourse.grade,
+      subject: newCourse.subject,
+      description: newCourse.description || 'Structured academic preparation.',
+      batchTiming: newCourse.batchTiming,
+      monthlyFee: newCourse.monthlyFee,
+      availableSeats: Number(newCourse.availableSeats),
+      status: 'Open',
+      highlights: ['Small batch size', 'Daily homework check', 'Concept building'],
+    });
+    setAddCourseModal(false);
+    refreshData();
+    showToast(`Created course offering for ${newCourse.grade}`);
+  };
+
+  const handleDeleteCourse = (id: string, subject: string) => {
+    if (confirm(`Are you sure you want to remove course "${subject}"?`)) {
+      db.deleteCourse(id);
+      refreshData();
+      showToast(`Removed course ${subject}`);
+    }
+  };
+
+  const handleAddAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    db.addAnnouncement({
+      title: newAnnouncement.title,
+      content: newAnnouncement.content,
+      targetGrade: newAnnouncement.targetGrade,
+      author: newAnnouncement.author,
+    });
+    setAddAnnouncementModal(false);
+    refreshData();
+    showToast('Published new announcement!');
+  };
+
+  const handleDeleteAnnouncement = (id: string) => {
+    if (confirm('Remove this announcement?')) {
+      db.deleteAnnouncement(id);
+      refreshData();
+      showToast('Announcement removed.');
+    }
+  };
+
+  const handleAddStudyMaterial = (e: React.FormEvent) => {
+    e.preventDefault();
+    db.addStudyMaterial({
+      title: newMaterial.title,
+      subject: newMaterial.subject,
+      grade: newMaterial.grade,
+      fileType: newMaterial.fileType,
+      downloadUrl: newMaterial.downloadUrl,
+    });
+    setAddMaterialModal(false);
+    refreshData();
+    showToast('Uploaded study material!');
+  };
+
+  const handleDeleteStudyMaterial = (id: string) => {
+    if (confirm('Remove this study material?')) {
+      db.deleteStudyMaterial(id);
+      refreshData();
+      showToast('Study material removed.');
+    }
   };
 
   // Attendance Save
@@ -100,9 +307,8 @@ export default function AdminDashboardView() {
       date: attendanceDate,
       status: attendanceMap[s.id] || 'Present',
     }));
-
     db.recordAttendance(records);
-    showToast(`Attendance recorded for ${records.length} students.`);
+    showToast('Attendance logged successfully!');
   };
 
   // Test Result Save
@@ -113,7 +319,6 @@ export default function AdminDashboardView() {
       alert('Please select a student.');
       return;
     }
-
     db.addTestResult({
       testName: testForm.testName,
       subject: testForm.subject,
@@ -125,12 +330,9 @@ export default function AdminDashboardView() {
       marksObtained: Number(testForm.marksObtained),
       remarks: testForm.remarks,
     });
-
-    showToast(`Marks saved for ${st.studentName}`);
-    refreshData();
+    showToast(`Logged test marks for ${st.studentName}`);
   };
 
-  // Statistics calculation
   const newEnquiriesCount = enquiries.filter(e => e.status === 'New').length;
   const pendingTrialsCount = trials.filter(t => t.status === 'Registered' || t.status === 'Scheduled').length;
   const activeStudentsCount = students.filter(s => s.status === 'Active').length;
@@ -163,8 +365,11 @@ export default function AdminDashboardView() {
               { id: 'enquiries', label: `Enquiries (${newEnquiriesCount})`, icon: MessageSquare, badge: newEnquiriesCount > 0 },
               { id: 'trials', label: `Free Trials (${pendingTrialsCount})`, icon: GraduationCap, badge: pendingTrialsCount > 0 },
               { id: 'students', label: `Students (${students.length})`, icon: Users },
+              { id: 'teachers', label: `Faculty (${teachers.length})`, icon: Users },
               { id: 'batches', label: 'Batches & Timings', icon: Clock },
               { id: 'courses', label: 'Courses & Fees', icon: BookOpen },
+              { id: 'announcements', label: 'Announcements', icon: Bell },
+              { id: 'materials', label: 'Study Resources', icon: Download },
               { id: 'attendance', label: 'Mark Attendance', icon: CheckCircle2 },
               { id: 'marks', label: 'Test Results & Marks', icon: FileText },
               { id: 'settings', label: 'CMS & Settings', icon: Settings },
@@ -228,7 +433,7 @@ export default function AdminDashboardView() {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-xs font-bold text-slate-500 uppercase">Active Students</div>
                 <div className="text-3xl font-black text-slate-900 mt-2">{activeStudentsCount}</div>
-                <div className="text-[11px] text-slate-500 mt-1">Enrolled across 3 batches</div>
+                <div className="text-[11px] text-slate-500 mt-1">Enrolled across active batches</div>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -240,8 +445,6 @@ export default function AdminDashboardView() {
 
             {/* Recent Enquiries & Trials Table Preview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Recent Enquiries Box */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-slate-900 text-sm">Recent Website Enquiries</h3>
@@ -267,7 +470,6 @@ export default function AdminDashboardView() {
                 </div>
               </div>
 
-              {/* Recent Trial Requests Box */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-slate-900 text-sm">Recent Free Trial Requests</h3>
@@ -290,7 +492,6 @@ export default function AdminDashboardView() {
                   ))}
                 </div>
               </div>
-
             </div>
           </div>
         )}
@@ -304,7 +505,6 @@ export default function AdminDashboardView() {
                 <p className="text-xs text-slate-500">Track lead inquiries and contact status</p>
               </div>
 
-              {/* Status Filter */}
               <div className="flex items-center space-x-2">
                 <Filter className="w-4 h-4 text-slate-500" />
                 <select
@@ -323,7 +523,6 @@ export default function AdminDashboardView() {
               </div>
             </div>
 
-            {/* Enquiries Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
@@ -333,7 +532,7 @@ export default function AdminDashboardView() {
                     <th className="p-4">Class & Subject</th>
                     <th className="p-4">Message / Notes</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4">Quick Actions</th>
+                    <th className="p-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -369,22 +568,12 @@ export default function AdminDashboardView() {
                           </select>
                         </td>
                         <td className="p-4 flex items-center space-x-2">
-                          <a
-                            href={getTelLink(enq.phone)}
-                            className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            title="Call Student"
-                          >
+                          <a href={getTelLink(enq.phone)} className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200" title="Call">
                             <Phone className="w-3.5 h-3.5" />
                           </a>
-                          <a
-                            href={getWhatsAppLink(enq.phone, CONTEXTUAL_WA_MESSAGES.general)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                            title="Chat on WhatsApp"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </a>
+                          <button onClick={() => handleDeleteEnquiry(enq.id)} className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -394,12 +583,14 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB 3: TRIAL REGISTRATIONS */}
+        {/* TAB 3: TRIALS */}
         {activeTab === 'trials' && (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">Free Trial Class Registrations</h1>
-              <p className="text-xs text-slate-500">Manage free trial class requests and scheduled sessions</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Free Trial Registrations</h1>
+                <p className="text-xs text-slate-500">Manage free demo class bookings</p>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
@@ -407,11 +598,11 @@ export default function AdminDashboardView() {
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
                   <tr>
                     <th className="p-4">Student & Parent</th>
+                    <th className="p-4">Contact</th>
                     <th className="p-4">Class & Subject</th>
-                    <th className="p-4">Contact Phone</th>
-                    <th className="p-4">Teacher & Timing</th>
-                    <th className="p-4">Trial Date</th>
+                    <th className="p-4">Preferred Teacher</th>
                     <th className="p-4">Status</th>
+                    <th className="p-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -419,33 +610,29 @@ export default function AdminDashboardView() {
                     <tr key={tr.id} className="hover:bg-slate-50/80">
                       <td className="p-4">
                         <div className="font-bold text-slate-900">{tr.studentName}</div>
-                        <div className="text-slate-400">Parent: {tr.parentName}</div>
-                      </td>
-                      <td className="p-4">
-                        <span className="font-bold">{tr.grade}</span> ({tr.subject})
+                        <div className="text-[10px] text-slate-500">Parent: {tr.parentName}</div>
                       </td>
                       <td className="p-4 font-semibold">{tr.phone}</td>
-                      <td className="p-4">
-                        <div>{tr.preferredTeacher}</div>
-                        <div className="text-[10px] text-slate-500">{tr.preferredTiming}</div>
-                      </td>
-                      <td className="p-4 font-semibold text-slate-900">
-                        {tr.trialDate || 'Not set'}
-                      </td>
+                      <td className="p-4"><span className="font-bold">{tr.grade}</span> - {tr.subject}</td>
+                      <td className="p-4 font-bold text-prime-orange">{tr.preferredTeacher}</td>
                       <td className="p-4">
                         <select
                           value={tr.status}
                           onChange={(e) => handleUpdateTrialStatus(tr.id, e.target.value as TrialStatus)}
-                          className="px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold bg-white"
+                          className="px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold bg-white"
                         >
                           <option value="Registered">Registered</option>
                           <option value="Contacted">Contacted</option>
                           <option value="Scheduled">Scheduled</option>
                           <option value="Attended">Attended</option>
-                          <option value="Absent">Absent</option>
                           <option value="Converted">Converted</option>
                           <option value="Not Converted">Not Converted</option>
                         </select>
+                      </td>
+                      <td className="p-4 flex items-center space-x-2">
+                        <button onClick={() => handleDeleteTrial(tr.id)} className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200" title="Delete">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -458,35 +645,52 @@ export default function AdminDashboardView() {
         {/* TAB 4: STUDENTS */}
         {activeTab === 'students' && (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">Enrolled Students Directory</h1>
-              <p className="text-xs text-slate-500">Student master records, batch allocations, and status</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Enrolled Students Roster</h1>
+                <p className="text-xs text-slate-500">Add, edit, or remove student enrollments</p>
+              </div>
+
+              <button
+                onClick={() => setAddStudentModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Student</span>
+              </button>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Student Name</th>
-                    <th className="p-4">Parent Name</th>
-                    <th className="p-4">Class</th>
-                    <th className="p-4">Assigned Batch</th>
-                    <th className="p-4">Teacher</th>
-                    <th className="p-4">Status</th>
+                    <th className="p-4">Student & Parent Name</th>
+                    <th className="p-4">Grade</th>
+                    <th className="p-4">Enrolled Batch</th>
+                    <th className="p-4">Assigned Teacher</th>
+                    <th className="p-4">Phone</th>
+                    <th className="p-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 font-medium">
                   {students.map((st) => (
                     <tr key={st.id} className="hover:bg-slate-50/80">
-                      <td className="p-4 font-bold text-slate-900">{st.studentName}</td>
-                      <td className="p-4">{st.parentName} ({st.phone})</td>
-                      <td className="p-4 font-bold text-prime-orange">{st.grade}</td>
-                      <td className="p-4 text-slate-600">{st.batchName}</td>
-                      <td className="p-4 font-semibold">{st.teacherName}</td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          {st.status}
-                        </span>
+                        <div className="font-bold text-slate-900">{st.studentName}</div>
+                        <div className="text-[10px] text-slate-500">Parent: {st.parentName}</div>
+                      </td>
+                      <td className="p-4 font-bold text-slate-900">{st.grade}</td>
+                      <td className="p-4 font-semibold text-prime-orange">{st.batchName}</td>
+                      <td className="p-4 font-semibold">{st.teacherName}</td>
+                      <td className="p-4">{st.phone}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleDeleteStudent(st.id, st.studentName)}
+                          className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 font-bold"
+                          title="Remove Student"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -496,31 +700,98 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB 5: BATCHES */}
+        {/* TAB 5: TEACHERS / FACULTY */}
+        {activeTab === 'teachers' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Faculty Management</h1>
+                <p className="text-xs text-slate-500">Add new teachers or modify existing faculty profiles</p>
+              </div>
+
+              <button
+                onClick={() => setAddTeacherModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Faculty Member</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {teachers.map((tc) => (
+                <div key={tc.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 relative">
+                  <button
+                    onClick={() => handleDeleteTeacher(tc.id, tc.name)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                    title="Remove Teacher"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 rounded-2xl bg-prime-orange/10 border border-prime-orange text-prime-orange flex items-center justify-center font-black text-xl">
+                      {tc.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900">{tc.name}</h3>
+                      <p className="text-xs text-slate-500 font-semibold">{tc.qualification} • {tc.experience}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">{tc.bio}</p>
+
+                  <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    {tc.subjects.map((sub, idx) => (
+                      <span key={idx} className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: BATCHES */}
         {activeTab === 'batches' && (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">Batch Scheduling</h1>
-              <p className="text-xs text-slate-500">Current batch capacity, timings, and rooms</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Batches & Class Timings</h1>
+                <p className="text-xs text-slate-500">Create new class batches and assign faculty</p>
+              </div>
+
+              <button
+                onClick={() => setAddBatchModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Batch</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {batches.map((b) => (
-                <div key={b.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-prime-orange bg-prime-orange-light px-2.5 py-0.5 rounded">
-                      {b.grade}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      {b.status}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-base">{b.name}</h3>
+                <div key={b.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 relative">
+                  <button
+                    onClick={() => handleDeleteBatch(b.id, b.name)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                    title="Remove Batch"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  <span className="text-[10px] font-bold text-prime-orange bg-prime-orange/10 px-2.5 py-0.5 rounded uppercase">
+                    {b.grade}
+                  </span>
+                  <h3 className="font-extrabold text-slate-900 text-base">{b.name}</h3>
                   <div className="text-xs text-slate-600 space-y-1">
-                    <div>Teacher: <strong>{b.teacherName}</strong></div>
-                    <div>Days: {b.days} ({b.startTime} - {b.endTime})</div>
+                    <div>Faculty: <strong>{b.teacherName}</strong></div>
+                    <div>Days: <strong>{b.days}</strong></div>
+                    <div>Timing: {b.startTime} - {b.endTime}</div>
                     <div>Room: {b.room}</div>
-                    <div>Capacity: {b.enrolledCount} / {b.maxStudents} students</div>
                   </div>
                 </div>
               ))}
@@ -528,35 +799,117 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB 6: COURSES & FEES */}
+        {/* TAB 7: COURSES */}
         {activeTab === 'courses' && (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">Courses & Monthly Fees</h1>
-              <p className="text-xs text-slate-500">Public course offerings, seat availability, and fee structure</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Course Offerings & Fees</h1>
+                <p className="text-xs text-slate-500">Manage website course cards and monthly fee plans</p>
+              </div>
+
+              <button
+                onClick={() => setAddCourseModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Course</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((c) => (
-                <div key={c.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase">{c.grade}</span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                      {c.monthlyFee}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-base">{c.subject}</h3>
-                  <p className="text-xs text-slate-600">{c.description}</p>
-                  <div className="text-[11px] font-semibold text-slate-500 pt-2">
-                    Timing: {c.batchTiming}
-                  </div>
+                <div key={c.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 relative">
+                  <button
+                    onClick={() => handleDeleteCourse(c.id, c.subject)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                    title="Remove Course"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  <span className="text-[10px] font-bold text-prime-orange bg-prime-orange/10 px-2.5 py-0.5 rounded">
+                    {c.grade}
+                  </span>
+                  <h3 className="font-extrabold text-slate-900 text-base">{c.subject}</h3>
+                  <div className="text-xl font-black text-slate-900">{c.monthlyFee}</div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{c.description}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* TAB 7: MARK ATTENDANCE */}
+        {/* TAB 8: ANNOUNCEMENTS */}
+        {activeTab === 'announcements' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Class Announcements</h1>
+                <p className="text-xs text-slate-500">Publish notices to student dashboards</p>
+              </div>
+
+              <button
+                onClick={() => setAddAnnouncementModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Announcement</span>
+              </button>
+            </div>
+
+            <div className="space-y-3 max-w-2xl">
+              {announcements.map((anc) => (
+                <div key={anc.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="font-bold text-slate-900 text-sm">{anc.title}</div>
+                    <p className="text-xs text-slate-600">{anc.content}</p>
+                    <div className="text-[10px] text-slate-400 font-semibold">Target: {anc.targetGrade} • Posted by {anc.author}</div>
+                  </div>
+                  <button onClick={() => handleDeleteAnnouncement(anc.id)} className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 9: STUDY MATERIALS */}
+        {activeTab === 'materials' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Study Resources & Worksheets</h1>
+                <p className="text-xs text-slate-500">Upload worksheets and formula cheat sheets</p>
+              </div>
+
+              <button
+                onClick={() => setAddMaterialModal(true)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Upload Study Resource</span>
+              </button>
+            </div>
+
+            <div className="space-y-3 max-w-2xl">
+              {materials.map((mat) => (
+                <div key={mat.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">{mat.title}</div>
+                    <div className="text-xs text-slate-500">{mat.subject} • {mat.grade} ({mat.fileType})</div>
+                  </div>
+                  <button onClick={() => handleDeleteStudyMaterial(mat.id)} className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 10: ATTENDANCE */}
         {activeTab === 'attendance' && (
           <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -651,7 +1004,7 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB 8: MARKS & TEST RESULTS */}
+        {/* TAB 11: MARKS */}
         {activeTab === 'marks' && (
           <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm max-w-2xl">
             <div>
@@ -695,7 +1048,6 @@ export default function AdminDashboardView() {
                   >
                     <option value="Mathematics">Mathematics</option>
                     <option value="Science">Science</option>
-                    <option value="Physics">Physics</option>
                   </select>
                 </div>
               </div>
@@ -744,12 +1096,12 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB 9: SETTINGS & CMS */}
+        {/* TAB 12: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm max-w-2xl">
             <div>
               <h1 className="text-2xl font-black text-slate-900">Institute CMS & Settings</h1>
-              <p className="text-xs text-slate-500">Edit contact details, location, phone numbers, and WhatsApp links live without changing code</p>
+              <p className="text-xs text-slate-500">Edit contact details, location, phone numbers, and WhatsApp links live</p>
             </div>
 
             <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
@@ -805,36 +1157,6 @@ export default function AdminDashboardView() {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">Landmark</label>
-                <input
-                  type="text"
-                  value={settings.landmark}
-                  onChange={(e) => setSettings({ ...settings, landmark: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">WhatsApp Community Link</label>
-                <input
-                  type="text"
-                  value={settings.whatsappCommunityUrl}
-                  onChange={(e) => setSettings({ ...settings, whatsappCommunityUrl: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">Available Free Trial Slots</label>
-                <input
-                  type="number"
-                  value={settings.trialSlotsAvailable}
-                  onChange={(e) => setSettings({ ...settings, trialSlotsAvailable: Number(e.target.value) })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs"
-                />
-              </div>
-
               <button
                 type="submit"
                 className="py-3 px-6 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition flex items-center space-x-2"
@@ -843,6 +1165,243 @@ export default function AdminDashboardView() {
                 <span>Save Institute Settings</span>
               </button>
             </form>
+          </div>
+        )}
+
+        {/* MODALS */}
+        {/* Add Student Modal */}
+        {addStudentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Add New Student</h2>
+                <button onClick={() => setAddStudentModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddStudent} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Student Name *</label>
+                  <input type="text" required value={newStudent.studentName} onChange={(e) => setNewStudent({ ...newStudent, studentName: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Parent Name *</label>
+                  <input type="text" required value={newStudent.parentName} onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Grade</label>
+                    <select value={newStudent.grade} onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                      <option value="Class 10">Class 10</option>
+                      <option value="Class 12">Class 12</option>
+                      <option value="Class 9">Class 9</option>
+                      <option value="Class 8">Class 8</option>
+                      <option value="Class 7">Class 7</option>
+                      <option value="Class 6">Class 6</option>
+                      <option value="Class 1 - 5">Class 1 - 5</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Phone *</label>
+                    <input type="text" required value={newStudent.phone} onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Assign Batch</label>
+                  <select value={newStudent.batchId} onChange={(e) => setNewStudent({ ...newStudent, batchId: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                    {batches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Save & Enroll Student
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Teacher Modal */}
+        {addTeacherModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Add Faculty Member</h2>
+                <button onClick={() => setAddTeacherModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddTeacher} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Full Name *</label>
+                  <input type="text" required value={newTeacher.name} onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Qualification</label>
+                    <input type="text" value={newTeacher.qualification} onChange={(e) => setNewTeacher({ ...newTeacher, qualification: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Experience</label>
+                    <input type="text" value={newTeacher.experience} onChange={(e) => setNewTeacher({ ...newTeacher, experience: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Subjects (comma separated)</label>
+                  <input type="text" value={newTeacher.subjects} onChange={(e) => setNewTeacher({ ...newTeacher, subjects: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Bio / Profile</label>
+                  <textarea rows={2} value={newTeacher.bio} onChange={(e) => setNewTeacher({ ...newTeacher, bio: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 resize-none" />
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Save Faculty Profile
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Batch Modal */}
+        {addBatchModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Add New Batch</h2>
+                <button onClick={() => setAddBatchModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddBatch} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Batch Name *</label>
+                  <input type="text" required value={newBatch.name} onChange={(e) => setNewBatch({ ...newBatch, name: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Grade</label>
+                    <input type="text" value={newBatch.grade} onChange={(e) => setNewBatch({ ...newBatch, grade: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Subject</label>
+                    <input type="text" value={newBatch.subject} onChange={(e) => setNewBatch({ ...newBatch, subject: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Faculty</label>
+                    <select value={newBatch.teacherName} onChange={(e) => setNewBatch({ ...newBatch, teacherName: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                      <option value="Praveen Gandhi">Praveen Gandhi</option>
+                      <option value="Rashmi Anand">Rashmi Anand</option>
+                      <option value="Praveen Gandhi & Rashmi Anand">Praveen Gandhi & Rashmi Anand</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Days Schedule</label>
+                    <input type="text" value={newBatch.days} onChange={(e) => setNewBatch({ ...newBatch, days: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Create Batch Schedule
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Course Modal */}
+        {addCourseModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Add New Course Offering</h2>
+                <button onClick={() => setAddCourseModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddCourse} className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Grade</label>
+                    <input type="text" required value={newCourse.grade} onChange={(e) => setNewCourse({ ...newCourse, grade: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Monthly Fee *</label>
+                    <input type="text" required value={newCourse.monthlyFee} onChange={(e) => setNewCourse({ ...newCourse, monthlyFee: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Subject Offering *</label>
+                  <input type="text" required value={newCourse.subject} onChange={(e) => setNewCourse({ ...newCourse, subject: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Batch Schedule / Timing</label>
+                  <input type="text" value={newCourse.batchTiming} onChange={(e) => setNewCourse({ ...newCourse, batchTiming: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Save Course Offering
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Announcement Modal */}
+        {addAnnouncementModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Publish Announcement</h2>
+                <button onClick={() => setAddAnnouncementModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddAnnouncement} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Notice Title *</label>
+                  <input type="text" required value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Content / Details *</label>
+                  <textarea rows={3} required value={newAnnouncement.content} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 resize-none" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Target Grade</label>
+                  <input type="text" value={newAnnouncement.targetGrade} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, targetGrade: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Publish Notice
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Study Material Modal */}
+        {addMaterialModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900">Upload Study Resource</h2>
+                <button onClick={() => setAddMaterialModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddStudyMaterial} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Resource Title *</label>
+                  <input type="text" required value={newMaterial.title} onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Subject</label>
+                    <input type="text" value={newMaterial.subject} onChange={(e) => setNewMaterial({ ...newMaterial, subject: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Grade</label>
+                    <input type="text" value={newMaterial.grade} onChange={(e) => setNewMaterial({ ...newMaterial, grade: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300" />
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
+                  Upload Resource
+                </button>
+              </form>
+            </div>
           </div>
         )}
 

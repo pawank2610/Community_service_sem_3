@@ -3,23 +3,50 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UserCheck, ShieldCheck, BookOpen, Lock, ArrowRight } from 'lucide-react';
+import { UserCheck, ShieldCheck, BookOpen, Lock, ArrowRight, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { UserRole } from '@/lib/types';
+import { isSupabaseConfigured, signInWithEmail } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
   const [role, setRole] = useState<UserRole>('ADMIN');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === 'ADMIN') {
-      router.push('/admin');
-    } else if (role === 'TEACHER') {
-      router.push('/teacher');
-    } else {
-      router.push('/student');
+    setLoading(true);
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await signInWithEmail(email, password);
+        if (error) {
+          setAuthError(error.message);
+          setLoading(false);
+          return;
+        }
+        setAuthSuccess('Supabase Authentication successful! Redirecting...');
+      } else {
+        setAuthSuccess('Session authenticated! Loading dashboard...');
+      }
+
+      setTimeout(() => {
+        if (role === 'ADMIN') {
+          router.push('/admin');
+        } else if (role === 'TEACHER') {
+          router.push('/teacher');
+        } else {
+          router.push('/student');
+        }
+      }, 600);
+    } catch (err: any) {
+      setAuthError(err.message || 'Login error occurred');
+      setLoading(false);
     }
   };
 
@@ -40,7 +67,7 @@ export default function LoginPage() {
         <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
           <button
             type="button"
-            onClick={() => setRole('ADMIN')}
+            onClick={() => { setRole('ADMIN'); setAuthError(null); }}
             className={`py-2 rounded-lg transition ${
               role === 'ADMIN' ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:text-slate-900'
             }`}
@@ -49,7 +76,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => setRole('TEACHER')}
+            onClick={() => { setRole('TEACHER'); setAuthError(null); }}
             className={`py-2 rounded-lg transition ${
               role === 'TEACHER' ? 'bg-prime-orange text-white shadow' : 'text-slate-600 hover:text-slate-900'
             }`}
@@ -58,7 +85,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => setRole('STUDENT')}
+            onClick={() => { setRole('STUDENT'); setAuthError(null); }}
             className={`py-2 rounded-lg transition ${
               role === 'STUDENT' ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
             }`}
@@ -66,6 +93,20 @@ export default function LoginPage() {
             Student/Parent
           </button>
         </div>
+
+        {authError && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{authError}</span>
+          </div>
+        )}
+
+        {authSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{authSuccess}</span>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -98,15 +139,19 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-prime-orange transition shadow-lg flex items-center justify-center space-x-2"
+            disabled={loading}
+            className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-prime-orange transition shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
           >
-            <span>Access {role.charAt(0) + role.slice(1).toLowerCase()} Dashboard</span>
+            <span>{loading ? 'Authenticating...' : `Access ${role.charAt(0) + role.slice(1).toLowerCase()} Dashboard`}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-400">
-          Demo access is pre-configured. Select a role above and click Access.
+        <div className="pt-2 text-center text-xs text-slate-400 space-y-1">
+          <div>{isSupabaseConfigured() ? '⚡ Supabase Auth Connected' : 'Demo role access is pre-configured.'}</div>
+          <div className="text-[11px] text-slate-400 font-medium">
+            Select a role tab above and click Access.
+          </div>
         </div>
 
       </div>
