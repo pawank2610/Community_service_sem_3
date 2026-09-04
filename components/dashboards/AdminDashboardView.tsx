@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
-  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight
+  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { 
@@ -11,9 +11,11 @@ import {
   AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus 
 } from '@/lib/types';
 import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
+import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function AdminDashboardView() {
   const [activeTab, setActiveTab] = useState<'overview' | 'enquiries' | 'trials' | 'students' | 'batches' | 'courses' | 'attendance' | 'marks' | 'settings'>('overview');
+  const [qrModalOpen, setQrModalOpen] = useState(false);
   
   // Data states
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
@@ -557,9 +559,22 @@ export default function AdminDashboardView() {
         {/* TAB 7: MARK ATTENDANCE */}
         {activeTab === 'attendance' && (
           <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">Batch Attendance Tracker</h1>
-              <p className="text-xs text-slate-500">Mark daily attendance for enrolled students</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Batch Attendance Tracker</h1>
+                <p className="text-xs text-slate-500">Supports live QR Code self-scanning and manual overrides</p>
+              </div>
+
+              {selectedBatchId && batches.find(b => b.id === selectedBatchId) && (
+                <button
+                  type="button"
+                  onClick={() => setQrModalOpen(true)}
+                  className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+                >
+                  <QrCode className="w-4 h-4 text-prime-orange" />
+                  <span>Project Batch QR Code</span>
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
@@ -829,6 +844,14 @@ export default function AdminDashboardView() {
               </button>
             </form>
           </div>
+        )}
+
+        {selectedBatchId && batches.find(b => b.id === selectedBatchId) && (
+          <QRAttendanceModal
+            batch={batches.find(b => b.id === selectedBatchId)!}
+            isOpen={qrModalOpen}
+            onClose={() => setQrModalOpen(false)}
+          />
         )}
 
       </main>

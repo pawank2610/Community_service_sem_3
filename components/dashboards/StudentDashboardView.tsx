@@ -1,13 +1,17 @@
 'use client';
 
-import React from 'react';
-import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
+import QRScannerModal from '@/components/QRScannerModal';
 
 export default function StudentDashboardView() {
   const settings = db.getSettings();
   const students = db.getStudents();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const student = students[0] || {
     id: 'std-1',
     studentName: 'Rohan Mehta',
@@ -54,7 +58,15 @@ export default function StudentDashboardView() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setScannerOpen(true)}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-2 animate-bounce-slow"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan Classroom QR</span>
+            </button>
+
             <a
               href={teacherWaUrl}
               target="_blank"
@@ -230,6 +242,15 @@ export default function StudentDashboardView() {
           </div>
 
         </div>
+
+        <QRScannerModal
+          student={student}
+          isOpen={scannerOpen}
+          onClose={() => setScannerOpen(false)}
+          onSuccess={() => {
+            setRefreshKey(k => k + 1);
+          }}
+        />
 
       </div>
     </div>

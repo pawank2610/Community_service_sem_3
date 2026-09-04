@@ -169,10 +169,53 @@ export const db = {
   },
   recordAttendance: (records: Omit<AttendanceRecord, 'id'>[]): AttendanceRecord[] => {
     const current = getStoredData<AttendanceRecord[]>('attendance', INITIAL_ATTENDANCE);
-    const newRecords = records.map(r => ({ ...r, id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}` }));
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newRecords = records.map(r => ({ 
+      ...r, 
+      id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      checkInMethod: r.checkInMethod || 'MANUAL',
+      checkInTime: r.checkInTime || timeString,
+    }));
     const updated = [...newRecords, ...current];
     setStoredData('attendance', updated);
     return updated;
+  },
+  markQRAttendance: (studentId: string, batchId: string, sessionPin?: string): { success: boolean; message: string; record?: AttendanceRecord } => {
+    const students = getStoredData<Student[]>('students', INITIAL_STUDENTS);
+    const student = students.find(s => s.id === studentId);
+    if (!student) {
+      return { success: false, message: 'Student record not found.' };
+    }
+
+    const attendance = getStoredData<AttendanceRecord[]>('attendance', INITIAL_ATTENDANCE);
+    const today = new Date().toISOString().split('T')[0];
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const existingIndex = attendance.findIndex(a => a.studentId === studentId && a.date === today);
+
+    const record: AttendanceRecord = {
+      id: existingIndex >= 0 ? attendance[existingIndex].id : `att-${Date.now()}`,
+      studentId: student.id,
+      studentName: student.studentName,
+      batchId: batchId || student.batchId,
+      date: today,
+      status: 'Present',
+      checkInMethod: 'QR_SCAN',
+      checkInTime: timeString,
+      sessionPin,
+      remarks: 'Automated QR Code Check-in',
+    };
+
+    let updated: AttendanceRecord[];
+    if (existingIndex >= 0) {
+      updated = [...attendance];
+      updated[existingIndex] = record;
+    } else {
+      updated = [record, ...attendance];
+    }
+
+    setStoredData('attendance', updated);
+    return { success: true, message: `Attendance marked Present for ${student.studentName} at ${timeString}`, record };
   },
 
   // Test Results

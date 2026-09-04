@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, CheckCircle2, FileText, Calendar, BookOpen, User } from 'lucide-react';
+import { Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Student, Batch } from '@/lib/types';
+import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function TeacherDashboardView() {
   const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks'>('batches');
@@ -12,6 +13,9 @@ export default function TeacherDashboardView() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0]?.id || '');
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'Present' | 'Absent'>>({});
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
+  const selectedBatch = batches.find(b => b.id === selectedBatchId) || batches[0];
 
   const [testForm, setTestForm] = useState({
     testName: 'Chapter 4 Physics Numerical Test',
@@ -132,9 +136,24 @@ export default function TeacherDashboardView() {
         {/* TAB 2: ATTENDANCE */}
         {activeTab === 'attendance' && (
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900">Mark Attendance</h2>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Mark & Track Attendance</h2>
+                <p className="text-xs text-slate-500">Supports live QR Code self-scanning and manual overrides</p>
+              </div>
+
+              {selectedBatch && (
+                <button
+                  onClick={() => setQrModalOpen(true)}
+                  className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+                >
+                  <QrCode className="w-4 h-4 text-prime-orange" />
+                  <span>Project Batch QR Code</span>
+                </button>
+              )}
+            </div>
             
-            <div className="grid grid-cols-2 gap-4 max-w-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Batch</label>
                 <select
@@ -265,6 +284,14 @@ export default function TeacherDashboardView() {
               </button>
             </form>
           </div>
+        )}
+
+        {selectedBatch && (
+          <QRAttendanceModal
+            batch={selectedBatch}
+            isOpen={qrModalOpen}
+            onClose={() => setQrModalOpen(false)}
+          />
         )}
 
       </div>

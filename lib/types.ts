@@ -132,6 +132,9 @@ export interface AttendanceRecord {
   batchId: string;
   date: string;
   status: 'Present' | 'Absent';
+  checkInMethod?: 'QR_SCAN' | 'MANUAL';
+  checkInTime?: string;
+  sessionPin?: string;
   remarks?: string;
 }
 
