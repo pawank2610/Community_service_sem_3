@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UserCheck, ShieldCheck, BookOpen, Lock, ArrowRight, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserCheck, ShieldCheck, BookOpen, Lock, ArrowRight, KeyRound, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 import { isSupabaseConfigured, signInWithEmail } from '@/lib/supabase';
 
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  const handleAutoFill = (selectedRole: UserRole, sampleEmail: string, samplePass: string) => {
+    setRole(selectedRole);
+    setEmail(sampleEmail);
+    setPassword(samplePass);
+    setAuthError(null);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,13 @@ export default function LoginPage() {
         }
         setAuthSuccess('Supabase Authentication successful! Redirecting...');
       } else {
-        setAuthSuccess('Session authenticated! Loading dashboard...');
+        setAuthSuccess(`Authenticated as ${role}! Redirecting...`);
+      }
+
+      // Persist session role in local storage
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('prime_learning_user_role', role);
+        window.localStorage.setItem('prime_learning_user_email', email || `${role.toLowerCase()}@primelearning.edu.in`);
       }
 
       setTimeout(() => {
@@ -94,6 +107,37 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {/* Quick Demo Credentials Autofill */}
+        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+            <span>⚡ 1-Click Demo Login</span>
+            <Sparkles className="w-3.5 h-3.5 text-prime-orange" />
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 text-[11px] font-bold">
+            <button
+              type="button"
+              onClick={() => handleAutoFill('ADMIN', 'admin@primelearning.edu.in', 'admin123')}
+              className="py-1.5 px-2 rounded-lg bg-white border border-slate-200 text-slate-900 hover:border-slate-400 text-center truncate"
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAutoFill('TEACHER', 'praveen@primelearning.edu.in', 'teacher123')}
+              className="py-1.5 px-2 rounded-lg bg-white border border-slate-200 text-prime-orange hover:border-prime-orange text-center truncate"
+            >
+              Teacher
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAutoFill('STUDENT', 'student@primelearning.edu.in', 'student123')}
+              className="py-1.5 px-2 rounded-lg bg-white border border-slate-200 text-emerald-700 hover:border-emerald-500 text-center truncate"
+            >
+              Student
+            </button>
+          </div>
+        </div>
+
         {authError && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -116,7 +160,7 @@ export default function LoginPage() {
             <input
               type="text"
               required
-              placeholder={role === 'ADMIN' ? 'admin@primelearning.edu.in' : role === 'TEACHER' ? 'teacher@primelearning.edu.in' : 'student@primelearning.edu.in'}
+              placeholder={role === 'ADMIN' ? 'admin@primelearning.edu.in' : role === 'TEACHER' ? 'praveen@primelearning.edu.in' : 'student@primelearning.edu.in'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-prime-orange text-sm outline-none"
@@ -148,9 +192,9 @@ export default function LoginPage() {
         </form>
 
         <div className="pt-2 text-center text-xs text-slate-400 space-y-1">
-          <div>{isSupabaseConfigured() ? '⚡ Supabase Auth Connected' : 'Demo role access is pre-configured.'}</div>
+          <div>{isSupabaseConfigured() ? '⚡ Supabase Production Auth Connected' : 'Role session auth enabled.'}</div>
           <div className="text-[11px] text-slate-400 font-medium">
-            Select a role tab above and click Access.
+            Select a role tab above or click a demo login button.
           </div>
         </div>
 
