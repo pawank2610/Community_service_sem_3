@@ -1,4 +1,4 @@
-import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge } from './types';
+import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge, StudentDoubt, VideoLesson, QuizQuestion, QuizResult } from './types';
 
 // Re-export mock data for local storage initialization
 import { 
@@ -462,6 +462,172 @@ export const db = {
     }
     return all;
   },
+
+  // Student Doubts Resolver
+  getDoubts: (): StudentDoubt[] => {
+    return getStoredData('student_doubts', [
+      {
+        id: 'doubt-1',
+        studentId: 'std-1',
+        studentName: 'Rohan Mehta',
+        grade: 'Class 10',
+        subject: 'Mathematics',
+        topic: 'Quadratic Equations',
+        questionText: 'How to find nature of roots when discriminant is zero vs negative?',
+        status: 'RESOLVED',
+        teacherReply: 'When D = 0, roots are real and equal (-b / 2a). When D < 0, roots are imaginary/complex.',
+        repliedBy: 'Praveen Gandhi',
+        createdAt: '2026-09-03T14:30:00Z',
+        repliedAt: '2026-09-03T16:15:00Z',
+      },
+      {
+        id: 'doubt-2',
+        studentId: 'std-1',
+        studentName: 'Rohan Mehta',
+        grade: 'Class 10',
+        subject: 'Science',
+        topic: 'Light Reflection & Refraction',
+        questionText: 'Why does a ray of light bend towards the normal when passing from air to glass?',
+        status: 'PENDING',
+        createdAt: '2026-09-05T09:00:00Z',
+      },
+    ]);
+  },
+  addDoubt: (doubtData: Omit<StudentDoubt, 'id' | 'createdAt' | 'status'>): StudentDoubt => {
+    const current = getStoredData<StudentDoubt[]>('student_doubts', []);
+    const newDoubt: StudentDoubt = {
+      ...doubtData,
+      id: `doubt-${Date.now()}`,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newDoubt, ...current];
+    setStoredData('student_doubts', updated);
+    return newDoubt;
+  },
+  replyDoubt: (id: string, reply: string, teacherName: string): StudentDoubt[] => {
+    const current = getStoredData<StudentDoubt[]>('student_doubts', []);
+    const updated = current.map(d => {
+      if (d.id === id) {
+        return {
+          ...d,
+          status: 'RESOLVED' as const,
+          teacherReply: reply,
+          repliedBy: teacherName,
+          repliedAt: new Date().toISOString(),
+        };
+      }
+      return d;
+    });
+    setStoredData('student_doubts', updated);
+    return updated;
+  },
+
+  // Video Lessons Vault
+  getVideoLessons: (): VideoLesson[] => {
+    return getStoredData('video_lessons', [
+      {
+        id: 'vid-1',
+        title: 'Quadratic Formula & Discriminant Shortcuts',
+        subject: 'Mathematics',
+        grade: 'Class 10',
+        duration: '24 mins',
+        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        notesPdfUrl: '#',
+        teacherName: 'Praveen Gandhi',
+        chapterName: 'Chapter 4: Quadratic Equations',
+      },
+      {
+        id: 'vid-2',
+        title: 'Ray Diagram Rules for Concave & Convex Mirrors',
+        subject: 'Science',
+        grade: 'Class 10',
+        duration: '32 mins',
+        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        notesPdfUrl: '#',
+        teacherName: 'Rashmi Anand',
+        chapterName: 'Chapter 10: Light & Optics',
+      },
+      {
+        id: 'vid-3',
+        title: 'Chemical Equations Balancing Technique',
+        subject: 'Science',
+        grade: 'Class 10',
+        duration: '18 mins',
+        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        notesPdfUrl: '#',
+        teacherName: 'Rashmi Anand',
+        chapterName: 'Chapter 1: Chemical Reactions',
+      },
+    ]);
+  },
+
+  // Chapter Practice Quizzes
+  getQuizQuestions: (subject: string = 'Mathematics'): QuizQuestion[] => {
+    if (subject.includes('Science')) {
+      return [
+        {
+          id: 'q1',
+          question: 'What is the focal length of a plane mirror?',
+          options: ['Zero', 'Infinite', '25 cm', '10 cm'],
+          correctOptionIndex: 1,
+          explanation: 'A plane mirror has an infinite radius of curvature, hence its focal length is infinite.',
+        },
+        {
+          id: 'q2',
+          question: 'Which gas is released when zinc reacts with dilute sulphuric acid?',
+          options: ['Oxygen', 'Carbon Dioxide', 'Hydrogen', 'Nitrogen'],
+          correctOptionIndex: 2,
+          explanation: 'Zn + H2SO4 -> ZnSO4 + H2(g). Hydrogen gas burns with a pop sound.',
+        },
+        {
+          id: 'q3',
+          question: 'The S.I. unit of electric current is:',
+          options: ['Volt', 'Ohm', 'Ampere', 'Joule'],
+          correctOptionIndex: 2,
+          explanation: 'Electric current is measured in Amperes (A), named after André-Marie Ampère.',
+        },
+      ];
+    }
+    return [
+      {
+        id: 'qm1',
+        question: 'If the discriminant D = b^2 - 4ac > 0 and a perfect square, the roots of the quadratic equation are:',
+        options: ['Real, rational and unequal', 'Real, irrational and unequal', 'Real and equal', 'Imaginary'],
+        correctOptionIndex: 0,
+        explanation: 'When D > 0 and D is a perfect square, sqrt(D) is rational, making the roots real, rational, and unequal.',
+      },
+      {
+        id: 'qm2',
+        question: 'What is the nth term formula for an Arithmetic Progression (AP)?',
+        options: ['an = a + n*d', 'an = a + (n - 1)*d', 'an = (n/2)*(a + l)', 'an = a * r^(n-1)'],
+        correctOptionIndex: 1,
+        explanation: 'The nth term an = a + (n - 1)d where a is first term and d is common difference.',
+      },
+      {
+        id: 'qm3',
+        question: 'If sin(theta) = 3/5, what is the value of cos(theta)?',
+        options: ['4/5', '3/4', '5/3', '5/4'],
+        correctOptionIndex: 0,
+        explanation: 'In a right triangle with perpendicular 3 and hypotenuse 5, base = sqrt(5^2 - 3^2) = 4. Thus cos(theta) = 4/5.',
+      },
+    ];
+  },
+  saveQuizResult: (result: Omit<QuizResult, 'id' | 'date'>): QuizResult => {
+    const current = getStoredData<QuizResult[]>('quiz_results', []);
+    const newResult: QuizResult = {
+      ...result,
+      id: `quiz-res-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+    };
+    setStoredData('quiz_results', [newResult, ...current]);
+    return newResult;
+  },
+  getQuizResults: (studentId?: string): QuizResult[] => {
+    const all = getStoredData<QuizResult[]>('quiz_results', []);
+    if (studentId) return all.filter(r => r.studentId === studentId);
+    return all;
+  },
 };
 
 // Named Helper Exports
@@ -475,4 +641,16 @@ export const getLeaveRequests = (studentId?: string) => {
 export const addLeaveRequest = db.addLeaveRequest;
 export const updateLeaveStatus = db.updateLeaveStatus;
 export const getBadges = db.getBadges;
+export const getDoubts = (studentId?: string) => {
+  const all = db.getDoubts();
+  if (studentId) return all.filter(d => d.studentId === studentId);
+  return all;
+};
+export const addDoubt = db.addDoubt;
+export const replyDoubt = db.replyDoubt;
+export const getVideoLessons = db.getVideoLessons;
+export const getQuizQuestions = db.getQuizQuestions;
+export const saveQuizResult = db.saveQuizResult;
+export const getQuizResults = db.getQuizResults;
+
 

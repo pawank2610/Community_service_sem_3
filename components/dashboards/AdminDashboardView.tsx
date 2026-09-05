@@ -3,19 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
-  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard
+  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone
 } from 'lucide-react';
-import { db, getPayments, getLeaveRequests, updateLeaveStatus } from '@/lib/db';
+import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt } from '@/lib/db';
 import { 
   Enquiry, TrialRegistration, Student, Batch, Course, Teacher, 
-  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial 
+  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial, StudentDoubt 
 } from '@/lib/types';
 import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function AdminDashboardView() {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'leaves' | 'settings'
+    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'leaves' | 'doubts' | 'broadcast' | 'settings'
   >('overview');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   
@@ -31,6 +31,7 @@ export default function AdminDashboardView() {
   const [settings, setSettings] = useState<InstituteSettings>(db.getSettings());
   const [payments, setPayments] = useState(getPayments());
   const [leaveRequests, setLeaveRequestsState] = useState(getLeaveRequests());
+  const [doubtsState, setDoubtsState] = useState<StudentDoubt[]>(getDoubts());
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,6 +103,7 @@ export default function AdminDashboardView() {
     setSettings(db.getSettings());
     setPayments(getPayments());
     setLeaveRequestsState(getLeaveRequests());
+    setDoubtsState(getDoubts());
   };
 
   const showToast = (msg: string) => {
@@ -374,6 +376,8 @@ export default function AdminDashboardView() {
               { id: 'courses', label: 'Courses & Fees', icon: BookOpen },
               { id: 'payments', label: `Fee Ledger (${payments.length})`, icon: CreditCard },
               { id: 'leaves', label: `Leave Requests (${leaveRequests.filter(l=>l.status==='PENDING').length})`, icon: Calendar, badge: leaveRequests.filter(l=>l.status==='PENDING').length > 0 },
+              { id: 'doubts', label: `Student Doubts (${doubtsState.filter(d=>d.status==='PENDING').length})`, icon: HelpCircle, badge: doubtsState.filter(d=>d.status==='PENDING').length > 0 },
+              { id: 'broadcast', label: 'WhatsApp Broadcaster', icon: Megaphone },
               { id: 'announcements', label: 'Announcements', icon: Bell },
               { id: 'materials', label: 'Study Resources', icon: Download },
               { id: 'attendance', label: 'Mark Attendance', icon: CheckCircle2 },
@@ -1232,6 +1236,127 @@ export default function AdminDashboardView() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: STUDENT DOUBTS OVERVIEW */}
+        {activeTab === 'doubts' && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900">Student Doubts Management</h1>
+              <p className="text-xs text-slate-500">Monitor student questions and faculty solution submittals</p>
+            </div>
+
+            <div className="space-y-4">
+              {doubtsState.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 italic bg-white rounded-2xl border border-slate-200">
+                  No student doubts logged.
+                </div>
+              ) : (
+                doubtsState.map((doubt) => (
+                  <div key={doubt.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm">{doubt.studentName}</span>
+                        <span className="text-xs text-slate-500 ml-2">({doubt.grade})</span>
+                        <div className="text-xs font-bold text-prime-orange">{doubt.subject} • {doubt.topic}</div>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border self-start sm:self-auto ${
+                        doubt.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'
+                      }`}>
+                        {doubt.status}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-800 font-medium bg-slate-50 p-3 rounded-xl border border-slate-200">
+                      <strong>Question:</strong> "{doubt.questionText}"
+                    </div>
+
+                    {doubt.teacherReply ? (
+                      <div className="text-xs text-indigo-900 bg-indigo-50 p-3 rounded-xl border border-indigo-100 space-y-1">
+                        <div className="font-bold text-[11px] text-indigo-700">Solution by {doubt.repliedBy}:</div>
+                        <p className="leading-relaxed">{doubt.teacherReply}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const replyText = prompt('Enter solution explanation for ' + doubt.studentName + ':', 'Use discriminant D = b^2 - 4ac.');
+                          if (replyText) {
+                            replyDoubt(doubt.id, replyText, 'Praveen Gandhi');
+                            refreshData();
+                            showToast('Solution posted!');
+                          }
+                        }}
+                        className="py-2 px-4 rounded-xl bg-slate-900 hover:bg-prime-orange text-white font-bold text-xs shadow transition flex items-center space-x-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Post Solution</span>
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: BULK WHATSAPP BROADCASTER */}
+        {activeTab === 'broadcast' && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900">Bulk WhatsApp & SMS Parent Broadcaster</h1>
+              <p className="text-xs text-slate-500">Dispatch 1-click monthly fee due alerts & attendance warnings to parents</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6 max-w-3xl">
+              <div className="space-y-3">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center">
+                  <Megaphone className="w-4 h-4 text-emerald-600 mr-2" />
+                  Select Student Roster for 1-Click WhatsApp Alert
+                </h3>
+
+                <div className="space-y-2">
+                  {students.map((st) => {
+                    const feeDueMsg = `Dear Parent (${st.parentName}), this is a friendly reminder from Prime Learning Classes Gurgaon regarding monthly tuition fee of ₹3,500 for ${st.studentName} (${st.grade}). Kindly complete online via UPI: http://localhost:3001/fees`;
+                    const feeDueUrl = getWhatsAppLink('919876543210', feeDueMsg);
+
+                    const attWarnMsg = `Dear Parent (${st.parentName}), attendance update for ${st.studentName} (${st.grade}): Student missed recent class session. Please contact teacher Praveen Gandhi / Rashmi Anand.`;
+                    const attWarnUrl = getWhatsAppLink('919876543210', attWarnMsg);
+
+                    return (
+                      <div key={st.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">{st.studentName}</div>
+                          <div className="text-[11px] text-slate-500">Parent: {st.parentName} • {st.grade} ({st.batchName})</div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <a
+                            href={feeDueUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition flex items-center space-x-1"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Fee Due Alert</span>
+                          </a>
+
+                          <a
+                            href={attWarnUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow transition flex items-center space-x-1"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Attendance Alert</span>
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}

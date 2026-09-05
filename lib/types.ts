@@ -221,3 +221,50 @@ export interface StudentBadge {
   iconName: string;
   earnedDate: string;
 }
+
+export interface StudentDoubt {
+  id: string;
+  studentId: string;
+  studentName: string;
+  grade: string;
+  subject: string;
+  topic: string;
+  questionText: string;
+  status: 'PENDING' | 'RESOLVED';
+  teacherReply?: string;
+  repliedBy?: string;
+  createdAt: string;
+  repliedAt?: string;
+}
+
+export interface VideoLesson {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  duration: string;
+  videoUrl: string;
+  notesPdfUrl: string;
+  teacherName: string;
+  chapterName: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+}
+
+export interface QuizResult {
+  id: string;
+  studentId: string;
+  studentName: string;
+  quizTitle: string;
+  subject: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  date: string;
+}

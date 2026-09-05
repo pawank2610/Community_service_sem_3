@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode, MessageSquare, Clock, Check, X } from 'lucide-react';
-import { db, getLeaveRequests, updateLeaveStatus } from '@/lib/db';
+import { Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode, MessageSquare, Clock, Check, X, HelpCircle, Send } from 'lucide-react';
+import { db, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt } from '@/lib/db';
 import { Student, Batch } from '@/lib/types';
 import { getWhatsAppLink } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function TeacherDashboardView() {
-  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'leaves'>('batches');
+  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'leaves' | 'doubts'>('batches');
   const batches = db.getBatches();
   const students = db.getStudents();
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0]?.id || '');
@@ -29,6 +29,16 @@ export default function TeacherDashboardView() {
   });
 
   const [message, setMessage] = useState<string | null>(null);
+
+  const handleReplyDoubt = (doubtId: string) => {
+    const replyText = prompt('Enter solution explanation for student doubt:', 'Use discriminant D = b^2 - 4ac. If D >= 0, roots are real.');
+    if (replyText) {
+      replyDoubt(doubtId, replyText, 'Praveen Gandhi / Rashmi Anand');
+      setMessage('Solution posted for student doubt!');
+      setRefreshKey(k => k + 1);
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
 
   const handleApproveLeave = (leaveId: string, makeupText: string) => {
     updateLeaveStatus(leaveId, 'APPROVED', makeupText || 'Sunday 11:00 AM Special Doubt Class');
@@ -115,6 +125,7 @@ export default function TeacherDashboardView() {
             { id: 'attendance', label: 'Mark Batch Attendance', icon: CheckCircle2 },
             { id: 'marks', label: 'Enter Test Scores', icon: FileText },
             { id: 'leaves', label: 'Leave Requests & Makeup', icon: Clock },
+            { id: 'doubts', label: `Student Doubts (${getDoubts().filter(d=>d.status==='PENDING').length})`, icon: HelpCircle },
           ].map(tab => (
             <button
               key={tab.id}
@@ -399,6 +410,60 @@ export default function TeacherDashboardView() {
                           <span>Reject</span>
                         </button>
                       </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: STUDENT DOUBTS RESOLVER DESK */}
+        {activeTab === 'doubts' && (
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Student Academic Doubt Resolver Desk</h2>
+              <p className="text-xs text-slate-500">Post step-by-step solutions to student queries in Mathematics & Science</p>
+            </div>
+
+            <div className="space-y-4">
+              {getDoubts().length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400 italic bg-slate-50 rounded-2xl">
+                  No student doubts submitted.
+                </div>
+              ) : (
+                getDoubts().map((doubt) => (
+                  <div key={doubt.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-2.5">
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm">{doubt.studentName}</span>
+                        <span className="text-xs text-slate-500 ml-2">({doubt.grade})</span>
+                        <div className="text-xs font-bold text-prime-orange">{doubt.subject} • {doubt.topic}</div>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border self-start sm:self-auto ${
+                        doubt.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'
+                      }`}>
+                        {doubt.status}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-800 font-medium bg-white p-3 rounded-xl border border-slate-200">
+                      <strong>Question:</strong> "{doubt.questionText}"
+                    </div>
+
+                    {doubt.teacherReply ? (
+                      <div className="text-xs text-indigo-900 bg-indigo-50 p-3 rounded-xl border border-indigo-100 space-y-1">
+                        <div className="font-bold text-[11px] text-indigo-700">Solution by {doubt.repliedBy}:</div>
+                        <p className="leading-relaxed">{doubt.teacherReply}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleReplyDoubt(doubt.id)}
+                        className="py-2 px-4 rounded-xl bg-slate-900 hover:bg-prime-orange text-white font-bold text-xs shadow transition flex items-center space-x-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Post Solution Step</span>
+                      </button>
                     )}
                   </div>
                 ))

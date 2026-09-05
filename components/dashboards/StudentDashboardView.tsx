@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, ChevronRight } from 'lucide-react';
-import { db, getBadges, getLeaveRequests } from '@/lib/db';
+import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, ChevronRight, Video, HelpCircle, Printer, Target, BookOpen } from 'lucide-react';
+import { db, getBadges, getLeaveRequests, getVideoLessons, getDoubts, getQuizResults } from '@/lib/db';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRScannerModal from '@/components/QRScannerModal';
 import FeePaymentModal from '@/components/FeePaymentModal';
 import LeaveRequestModal from '@/components/LeaveRequestModal';
+import PracticeQuizModal from '@/components/PracticeQuizModal';
+import ReportCardModal from '@/components/ReportCardModal';
+import DoubtResolverModal from '@/components/DoubtResolverModal';
 
 export default function StudentDashboardView() {
   const settings = db.getSettings();
@@ -14,6 +17,10 @@ export default function StudentDashboardView() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [feeModalOpen, setFeeModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [quizModalOpen, setQuizModalOpen] = useState(false);
+  const [reportCardOpen, setReportCardOpen] = useState(false);
+  const [doubtModalOpen, setDoubtModalOpen] = useState(false);
+  const [videoVaultOpen, setVideoVaultOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const student = students[0] || {
@@ -65,15 +72,39 @@ export default function StudentDashboardView() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setScannerOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-1.5"
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-1.5"
             >
               <QrCode className="w-4 h-4" />
               <span>Scan QR</span>
             </button>
 
             <button
+              onClick={() => setQuizModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-amber-500 hover:bg-amber-400 transition shadow flex items-center space-x-1.5"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>AI Quiz</span>
+            </button>
+
+            <button
+              onClick={() => setDoubtModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-purple-600 hover:bg-purple-500 transition shadow flex items-center space-x-1.5"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Ask Doubt</span>
+            </button>
+
+            <button
+              onClick={() => setReportCardOpen(true)}
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-slate-800 hover:bg-slate-700 transition border border-slate-700 flex items-center space-x-1.5"
+            >
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span>PTM Report</span>
+            </button>
+
+            <button
               onClick={() => setFeeModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 transition shadow flex items-center space-x-1.5"
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 transition shadow flex items-center space-x-1.5"
             >
               <CreditCard className="w-4 h-4" />
               <span>Pay Fee (UPI)</span>
@@ -81,22 +112,13 @@ export default function StudentDashboardView() {
 
             <button
               onClick={() => setLeaveModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition shadow flex items-center space-x-1.5"
+              className="px-3.5 py-2 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition shadow flex items-center space-x-1.5"
             >
               <Calendar className="w-4 h-4" />
-              <span>Apply Leave</span>
+              <span>Leave</span>
             </button>
 
-            <a
-              href={teacherWaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition flex items-center space-x-1"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Teacher</span>
-            </a>
-            <a href="/" className="px-2.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">
+            <a href="/" className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">
               Exit
             </a>
           </div>
@@ -270,6 +292,41 @@ export default function StudentDashboardView() {
               </div>
             </div>
 
+            {/* CBSE Board Exam Score Predictor & Target Setter */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 rounded-3xl border border-blue-800/40 shadow-lg space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-blue-500/20 rounded-xl border border-blue-400/30 text-blue-300">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">CBSE Board Exam Rank Predictor</h3>
+                    <p className="text-[11px] text-blue-200">Based on past test performance & unit test series</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  Predicted: {Math.min(96, avgMarks + 5)}%
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <span className="text-slate-400 text-[10px] block font-bold uppercase">Maths Forecast</span>
+                  <span className="text-sm font-black text-amber-400">92 / 100</span>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Praveen Sir Target</span>
+                </div>
+                <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <span className="text-slate-400 text-[10px] block font-bold uppercase">Science Forecast</span>
+                  <span className="text-sm font-black text-emerald-400">94 / 100</span>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Rashmi Ma'am Target</span>
+                </div>
+                <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <span className="text-slate-400 text-[10px] block font-bold uppercase">Recommended Action</span>
+                  <span className="text-xs font-bold text-indigo-300">Take Trigonometry Practice Quiz</span>
+                </div>
+              </div>
+            </div>
+
             {/* Attendance History */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-900 flex items-center">
@@ -293,9 +350,45 @@ export default function StudentDashboardView() {
 
           </div>
 
-          {/* Right Column (4 cols): Announcements & Study Resources */}
+          {/* Right Column (4 cols): Video Vault, Announcements, Study Resources */}
           <div className="lg:col-span-4 space-y-6">
             
+            {/* Recorded Class Video Vault */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-slate-900 flex items-center">
+                  <Video className="w-5 h-5 text-indigo-600 mr-2" />
+                  Recorded Class Vault
+                </h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                  {getVideoLessons().length} Lessons
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {getVideoLessons().map((vid) => (
+                  <div key={vid.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                    <div className="font-bold text-slate-900 leading-tight">{vid.title}</div>
+                    <div className="text-[10px] text-slate-500 flex justify-between">
+                      <span>{vid.subject} • {vid.duration}</span>
+                      <span className="font-semibold text-slate-700">{vid.teacherName}</span>
+                    </div>
+                    <div className="pt-1 flex items-center space-x-2">
+                      <a
+                        href={vid.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-1 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] flex items-center space-x-1"
+                      >
+                        <Video className="w-3 h-3" />
+                        <span>Watch Video</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Gamified Badges */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
@@ -412,6 +505,7 @@ export default function StudentDashboardView() {
 
         </div>
 
+        {/* Modals */}
         <QRScannerModal
           student={student}
           isOpen={scannerOpen}
@@ -436,6 +530,34 @@ export default function StudentDashboardView() {
         <LeaveRequestModal
           isOpen={leaveModalOpen}
           onClose={() => setLeaveModalOpen(false)}
+          studentId={student.id}
+          studentName={student.studentName}
+          studentClass={student.grade}
+          onSubmitted={() => {
+            setRefreshKey(k => k + 1);
+          }}
+        />
+
+        <PracticeQuizModal
+          isOpen={quizModalOpen}
+          onClose={() => setQuizModalOpen(false)}
+          studentId={student.id}
+          studentName={student.studentName}
+          subject="Mathematics"
+          onCompleted={() => {
+            setRefreshKey(k => k + 1);
+          }}
+        />
+
+        <ReportCardModal
+          isOpen={reportCardOpen}
+          onClose={() => setReportCardOpen(false)}
+          student={student}
+        />
+
+        <DoubtResolverModal
+          isOpen={doubtModalOpen}
+          onClose={() => setDoubtModalOpen(false)}
           studentId={student.id}
           studentName={student.studentName}
           studentClass={student.grade}
