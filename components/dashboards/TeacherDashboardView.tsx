@@ -8,14 +8,20 @@ import { getWhatsAppLink } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function TeacherDashboardView() {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'leaves' | 'doubts'>('batches');
   const batches = db.getBatches();
   const students = db.getStudents();
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0]?.id || '');
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>('2026-09-05');
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'Present' | 'Absent'>>({});
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  React.useEffect(() => {
+    setMounted(true);
+    setAttendanceDate(new Date().toISOString().split('T')[0]);
+  }, []);
 
   const selectedBatch = batches.find(b => b.id === selectedBatchId) || batches[0];
 

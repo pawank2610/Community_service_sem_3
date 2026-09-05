@@ -41,13 +41,14 @@ export default function Navbar({ onOpenTrialModal, onOpenEnquiryModal }: NavbarP
         <div className="flex items-center justify-between">
           
           {/* Logo Section */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative w-36 h-12 sm:w-44 sm:h-14 transition-transform group-hover:scale-105">
+          <Link href="/" className="flex items-center space-x-3 group shrink-0">
+            <div className="relative w-36 h-12 sm:w-44 sm:h-14 transition-transform group-hover:scale-105 overflow-hidden shrink-0" style={{ maxWidth: '176px', maxHeight: '56px' }}>
               <Image 
                 src="/logo-transparent.png" 
                 alt="Prime Learning Logo" 
-                fill 
-                className="object-contain object-left"
+                width={176}
+                height={56}
+                className="w-full h-full object-contain object-left"
                 priority
               />
             </div>

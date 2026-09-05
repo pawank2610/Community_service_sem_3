@@ -40,7 +40,7 @@ export default function AdminDashboardView() {
 
   // Attendance Form State
   const [selectedBatchId, setSelectedBatchId] = useState<string>('');
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>('2026-09-05');
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'Present' | 'Absent'>>({});
 
   // Test Mark Form State

@@ -18,12 +18,13 @@ export default function Footer() {
           
           {/* Column 1: Brand Info */}
           <div className="space-y-4">
-            <div className="relative w-48 h-14 bg-white/90 p-2 rounded-xl">
+            <div className="relative w-48 h-14 bg-white/90 p-2 rounded-xl overflow-hidden shrink-0" style={{ maxWidth: '192px', maxHeight: '56px' }}>
               <Image 
                 src="/logo-transparent.png" 
                 alt="Prime Learning Logo" 
-                fill 
-                className="object-contain p-1"
+                width={192}
+                height={56}
+                className="w-full h-full object-contain p-1"
               />
             </div>
             <p className="text-sm text-slate-400 leading-relaxed pt-2">

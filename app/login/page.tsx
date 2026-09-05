@@ -84,8 +84,8 @@ export default function LoginPage() {
         
         {/* Logo Header */}
         <div className="text-center space-y-3">
-          <div className="relative w-44 h-12 mx-auto">
-            <Image src="/logo-transparent.png" alt="Prime Learning Logo" fill className="object-contain" />
+          <div className="relative w-44 h-12 mx-auto overflow-hidden shrink-0" style={{ maxWidth: '176px', maxHeight: '48px' }}>
+            <Image src="/logo-transparent.png" alt="Prime Learning Logo" width={176} height={48} className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-black text-slate-900">Institute Portal Login</h1>
           <p className="text-xs text-slate-500">Select your role to access your dashboard</p>

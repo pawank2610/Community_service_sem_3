@@ -12,8 +12,8 @@ import ReportCardModal from '@/components/ReportCardModal';
 import DoubtResolverModal from '@/components/DoubtResolverModal';
 
 export default function StudentDashboardView() {
+  const [mounted, setMounted] = useState(false);
   const settings = db.getSettings();
-  const students = db.getStudents();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [feeModalOpen, setFeeModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -23,10 +23,15 @@ export default function StudentDashboardView() {
   const [videoVaultOpen, setVideoVaultOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const students = mounted ? db.getStudents() : [];
   const student = students[0] || {
     id: 'std-1',
-    studentName: 'Rohan Mehta',
-    parentName: 'Sunil Mehta',
+    studentName: 'Bhavya Anand',
+    parentName: 'Rashmi Anand',
     grade: 'Class 10',
     subjects: ['Mathematics'],
     batchName: 'Batch M10-A (Class 10 Math)',
