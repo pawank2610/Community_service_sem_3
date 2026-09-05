@@ -1,4 +1,4 @@
-import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge, StudentDoubt, VideoLesson, QuizQuestion, QuizResult } from './types';
+import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge, StudentDoubt, VideoLesson, QuizQuestion, QuizResult, UserAccount } from './types';
 
 // Re-export mock data for local storage initialization
 import { 
@@ -89,6 +89,15 @@ export const db = {
     };
     const updated = [...current, newTeacher];
     setStoredData('teachers', updated);
+    if (newTeacher.email && newTeacher.password) {
+      db.saveUserAccount({
+        email: newTeacher.email,
+        password: newTeacher.password,
+        name: newTeacher.name,
+        role: 'TEACHER',
+        associatedId: newTeacher.id,
+      });
+    }
     return newTeacher;
   },
   deleteTeacher: (id: string): Teacher[] => {
@@ -217,6 +226,15 @@ export const db = {
     };
     const updated = [newStudent, ...current];
     setStoredData('students', updated);
+    if (newStudent.email && newStudent.password) {
+      db.saveUserAccount({
+        email: newStudent.email,
+        password: newStudent.password,
+        name: newStudent.studentName,
+        role: 'STUDENT',
+        associatedId: newStudent.id,
+      });
+    }
     return newStudent;
   },
   deleteStudent: (id: string): Student[] => {
@@ -628,6 +646,42 @@ export const db = {
     if (studentId) return all.filter(r => r.studentId === studentId);
     return all;
   },
+
+  // User Accounts
+  getUserAccounts: (): UserAccount[] => {
+    return getStoredData('user_accounts', [
+      { id: 'usr-admin', email: 'admin@primelearning.edu.in', password: 'admin', name: 'Admin', role: 'ADMIN', createdAt: '2026-09-01' },
+      { id: 'usr-teacher-1', email: 'praveen@primelearning.edu.in', password: 'teacher123', name: 'Praveen Gandhi', role: 'TEACHER', associatedId: 'teacher-praveen', createdAt: '2026-09-01' },
+      { id: 'usr-teacher-2', email: 'rashmi@primelearning.edu.in', password: 'teacher123', name: 'Rashmi Anand', role: 'TEACHER', associatedId: 'teacher-rashmi', createdAt: '2026-09-01' },
+      { id: 'usr-student-1', email: 'student@primelearning.edu.in', password: 'student123', name: 'Bhavya Anand', role: 'STUDENT', associatedId: 'std-1', createdAt: '2026-09-01' },
+    ]);
+  },
+  saveUserAccount: (account: Omit<UserAccount, 'id' | 'createdAt'>): UserAccount => {
+    const current = db.getUserAccounts();
+    const existingIndex = current.findIndex(a => a.email.toLowerCase() === account.email.toLowerCase().trim());
+    const newAccount: UserAccount = {
+      ...account,
+      email: account.email.toLowerCase().trim(),
+      id: `usr-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    let updated: UserAccount[];
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = { ...updated[existingIndex], ...account };
+    } else {
+      updated = [newAccount, ...current];
+    }
+    setStoredData('user_accounts', updated);
+    return newAccount;
+  },
+  findUserAccount: (email: string, password?: string): UserAccount | undefined => {
+    const accounts = db.getUserAccounts();
+    return accounts.find(a => 
+      a.email.toLowerCase() === email.toLowerCase().trim() && 
+      (!password || !a.password || a.password === password)
+    );
+  },
 };
 
 // Named Helper Exports
@@ -652,5 +706,9 @@ export const getVideoLessons = db.getVideoLessons;
 export const getQuizQuestions = db.getQuizQuestions;
 export const saveQuizResult = db.saveQuizResult;
 export const getQuizResults = db.getQuizResults;
+export const getUserAccounts = db.getUserAccounts;
+export const saveUserAccount = db.saveUserAccount;
+export const findUserAccount = db.findUserAccount;
+
 
 

@@ -8,6 +8,7 @@ import { UserRole } from '@/lib/types';
 import { isSupabaseConfigured, signInWithEmail } from '@/lib/supabase';
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, findUserAccount } from '@/lib/db';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,21 +33,37 @@ export default function LoginPage() {
     setAuthSuccess(null);
 
     try {
-      if (auth && email && password) {
+      const trimmedEmail = email.trim();
+      let effectiveRole = role;
+
+      // Check registered accounts
+      const matchedAccount = db.findUserAccount(trimmedEmail, password);
+      const emailOnlyAccount = db.findUserAccount(trimmedEmail);
+
+      if (emailOnlyAccount && !matchedAccount) {
+        setAuthError('Incorrect password entered. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (matchedAccount) {
+        effectiveRole = matchedAccount.role;
+      }
+
+      if (auth && trimmedEmail && password) {
         try {
-          await signInWithEmailAndPassword(auth, email, password);
-          setAuthSuccess(`🔥 Firebase Auth verified! Authenticated as ${role}. Redirecting...`);
+          await signInWithEmailAndPassword(auth, trimmedEmail, password);
+          setAuthSuccess(`🔥 Firebase Auth verified! Authenticated as ${effectiveRole}. Redirecting...`);
         } catch (firebaseErr: any) {
-          // If demo user or user not in Firebase console yet, allow fallback with notification
-          if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential') {
-            setAuthSuccess(`Authenticated as ${role} (Demo Access). Redirecting...`);
+          if (matchedAccount) {
+            setAuthSuccess(`Authenticated as ${effectiveRole} (Registered Account). Redirecting...`);
           } else {
             console.warn('Firebase login attempt:', firebaseErr.message);
-            setAuthSuccess(`Authenticated as ${role}! Redirecting...`);
+            setAuthSuccess(`Authenticated as ${effectiveRole}! Redirecting...`);
           }
         }
       } else if (isSupabaseConfigured()) {
-        const { data, error } = await signInWithEmail(email, password);
+        const { data, error } = await signInWithEmail(trimmedEmail, password);
         if (error) {
           setAuthError(error.message);
           setLoading(false);
@@ -54,19 +71,22 @@ export default function LoginPage() {
         }
         setAuthSuccess('Supabase Authentication successful! Redirecting...');
       } else {
-        setAuthSuccess(`Authenticated as ${role}! Redirecting...`);
+        setAuthSuccess(`Authenticated as ${effectiveRole}! Redirecting...`);
       }
 
       // Persist session role in local storage
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('prime_learning_user_role', role);
-        window.localStorage.setItem('prime_learning_user_email', email || `${role.toLowerCase()}@primelearning.edu.in`);
+        window.localStorage.setItem('prime_learning_user_role', effectiveRole);
+        window.localStorage.setItem('prime_learning_user_email', trimmedEmail || `${effectiveRole.toLowerCase()}@primelearning.edu.in`);
+        if (matchedAccount?.name) {
+          window.localStorage.setItem('prime_learning_user_name', matchedAccount.name);
+        }
       }
 
       setTimeout(() => {
-        if (role === 'ADMIN') {
+        if (effectiveRole === 'ADMIN') {
           router.push('/admin');
-        } else if (role === 'TEACHER') {
+        } else if (effectiveRole === 'TEACHER') {
           router.push('/teacher');
         } else {
           router.push('/student');

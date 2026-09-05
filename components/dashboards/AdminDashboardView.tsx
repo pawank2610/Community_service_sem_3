@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
-  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone
+  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone,
+  Lock, KeyRound, Mail
 } from 'lucide-react';
 import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt } from '@/lib/db';
 import { 
@@ -11,6 +12,8 @@ import {
   AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial, StudentDoubt 
 } from '@/lib/types';
 import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
+import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function AdminDashboardView() {
@@ -57,12 +60,12 @@ export default function AdminDashboardView() {
   // Modal States
   const [addStudentModal, setAddStudentModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
-    studentName: '', parentName: '', grade: 'Class 10', subjects: 'Maths & Science', phone: '', whatsapp: '', batchId: '', teacherName: 'Praveen Gandhi & Rashmi Anand'
+    studentName: '', parentName: '', grade: 'Class 10', subjects: 'Maths & Science', phone: '', whatsapp: '', email: '', password: '', batchId: '', teacherName: 'Praveen Gandhi & Rashmi Anand'
   });
 
   const [addTeacherModal, setAddTeacherModal] = useState(false);
   const [newTeacher, setNewTeacher] = useState({
-    name: '', qualification: 'M.Sc.', experience: '5+ Years', subjects: 'Mathematics', classesTaught: 'Class 9 - 12', bio: '', philosophy: ''
+    name: '', qualification: 'M.Sc.', experience: '5+ Years', subjects: 'Mathematics', classesTaught: 'Class 9 - 12', bio: '', philosophy: '', email: '', password: ''
   });
 
   const [addBatchModal, setAddBatchModal] = useState(false);
@@ -148,9 +151,12 @@ export default function AdminDashboardView() {
   };
 
   // CRUD Handlers
-  const handleAddStudent = (e: React.FormEvent) => {
+  const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     const batch = batches.find(b => b.id === newStudent.batchId) || batches[0];
+    const emailToUse = newStudent.email ? newStudent.email.trim().toLowerCase() : `${newStudent.studentName.toLowerCase().replace(/[^a-z0-9]/g, '')}@primelearning.edu.in`;
+    const passwordToUse = newStudent.password || 'student123';
+
     db.addStudent({
       studentName: newStudent.studentName,
       parentName: newStudent.parentName,
@@ -158,13 +164,27 @@ export default function AdminDashboardView() {
       subjects: newStudent.subjects.split(',').map(s => s.trim()),
       phone: newStudent.phone,
       whatsapp: newStudent.whatsapp || newStudent.phone,
+      email: emailToUse,
+      password: passwordToUse,
       batchId: batch ? batch.id : 'batch-1',
       batchName: batch ? batch.name : 'Class 10 Batch',
       teacherName: newStudent.teacherName,
     });
+
+    if (auth && emailToUse && passwordToUse) {
+      try {
+        await createUserWithEmailAndPassword(auth, emailToUse, passwordToUse);
+      } catch (fbErr: any) {
+        console.warn('Firebase Auth account creation notice:', fbErr.message);
+      }
+    }
+
     setAddStudentModal(false);
     refreshData();
-    showToast(`Added new student: ${newStudent.studentName}`);
+    showToast(`Added student "${newStudent.studentName}" with login account (${emailToUse})!`);
+    setNewStudent({
+      studentName: '', parentName: '', grade: 'Class 10', subjects: 'Maths & Science', phone: '', whatsapp: '', email: '', password: '', batchId: '', teacherName: 'Praveen Gandhi & Rashmi Anand'
+    });
   };
 
   const handleDeleteStudent = (id: string, name: string) => {
@@ -175,8 +195,11 @@ export default function AdminDashboardView() {
     }
   };
 
-  const handleAddTeacher = (e: React.FormEvent) => {
+  const handleAddTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailToUse = newTeacher.email ? newTeacher.email.trim().toLowerCase() : `${newTeacher.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@primelearning.edu.in`;
+    const passwordToUse = newTeacher.password || 'teacher123';
+
     db.addTeacher({
       name: newTeacher.name,
       qualification: newTeacher.qualification,
@@ -185,14 +208,28 @@ export default function AdminDashboardView() {
       classesTaught: newTeacher.classesTaught.split(',').map(s => s.trim()),
       teachingPhilosophy: newTeacher.philosophy || 'Concept-focused interactive learning.',
       areasOfExpertise: [newTeacher.subjects, 'Board Exam Preparation'],
-      achievements: ['Guided 100+ students to top grades'],
+      achievements: ['10+ Years Experience in Board Preparation'],
       photoUrl: '/images/teacher-rajesh.jpg',
       bio: newTeacher.bio || 'Dedicated educator.',
+      email: emailToUse,
+      password: passwordToUse,
       studentFeedback: [],
     });
+
+    if (auth && emailToUse && passwordToUse) {
+      try {
+        await createUserWithEmailAndPassword(auth, emailToUse, passwordToUse);
+      } catch (fbErr: any) {
+        console.warn('Firebase Auth account creation notice:', fbErr.message);
+      }
+    }
+
     setAddTeacherModal(false);
     refreshData();
-    showToast(`Added new faculty: ${newTeacher.name}`);
+    showToast(`Added faculty "${newTeacher.name}" with login account (${emailToUse})!`);
+    setNewTeacher({
+      name: '', qualification: 'M.Sc.', experience: '5+ Years', subjects: 'Mathematics', classesTaught: 'Class 9 - 12', bio: '', philosophy: '', email: '', password: ''
+    });
   };
 
   const handleDeleteTeacher = (id: string, name: string) => {
@@ -1478,8 +1515,42 @@ export default function AdminDashboardView() {
                     ))}
                   </select>
                 </div>
-                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
-                  Save & Enroll Student
+
+                {/* Account Credentials Section */}
+                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
+                  <div className="flex items-center space-x-1.5 text-[11px] font-bold text-amber-900">
+                    <KeyRound className="w-3.5 h-3.5 text-prime-orange" />
+                    <span>Portal Login Account (For Student / Parent)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1 text-[10px]">Login Email *</label>
+                      <input 
+                        type="email" 
+                        required 
+                        placeholder="student@primelearning.edu.in" 
+                        value={newStudent.email} 
+                        onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} 
+                        className="w-full p-2 rounded-xl border border-slate-300 bg-white text-xs outline-none focus:ring-1 focus:ring-prime-orange" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1 text-[10px]">Account Password *</label>
+                      <input 
+                        type="password" 
+                        required 
+                        placeholder="Min 6 chars (e.g. Pass123)" 
+                        value={newStudent.password} 
+                        onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })} 
+                        className="w-full p-2 rounded-xl border border-slate-300 bg-white text-xs outline-none focus:ring-1 focus:ring-prime-orange" 
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-amber-700">Account will be created in Firebase Auth & Institute Portal.</p>
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow">
+                  Save & Create Student Account
                 </button>
               </form>
             </div>
@@ -1518,8 +1589,42 @@ export default function AdminDashboardView() {
                   <label className="block font-bold text-slate-700 uppercase mb-1">Bio / Profile</label>
                   <textarea rows={2} value={newTeacher.bio} onChange={(e) => setNewTeacher({ ...newTeacher, bio: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 resize-none" />
                 </div>
-                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition">
-                  Save Faculty Profile
+
+                {/* Faculty Account Credentials Section */}
+                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-2">
+                  <div className="flex items-center space-x-1.5 text-[11px] font-bold text-blue-900">
+                    <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Faculty Portal Login Account</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1 text-[10px]">Faculty Email *</label>
+                      <input 
+                        type="email" 
+                        required 
+                        placeholder="teacher@primelearning.edu.in" 
+                        value={newTeacher.email} 
+                        onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })} 
+                        className="w-full p-2 rounded-xl border border-slate-300 bg-white text-xs outline-none focus:ring-1 focus:ring-prime-orange" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1 text-[10px]">Account Password *</label>
+                      <input 
+                        type="password" 
+                        required 
+                        placeholder="Min 6 chars (e.g. Pass123)" 
+                        value={newTeacher.password} 
+                        onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })} 
+                        className="w-full p-2 rounded-xl border border-slate-300 bg-white text-xs outline-none focus:ring-1 focus:ring-prime-orange" 
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-blue-700">Faculty member can log into the Teacher Dashboard with this login.</p>
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow">
+                  Save & Create Faculty Account
                 </button>
               </form>
             </div>

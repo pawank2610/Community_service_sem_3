@@ -58,6 +58,8 @@ export interface Teacher {
   achievements: string[];
   photoUrl: string;
   bio: string;
+  email?: string;
+  password?: string;
   studentFeedback: {
     author: string;
     comment: string;
@@ -118,11 +120,23 @@ export interface Student {
   subjects: string[];
   phone: string;
   whatsapp: string;
+  email?: string;
+  password?: string;
   batchId: string;
   batchName: string;
   teacherName: string;
   admissionDate: string;
   status: StudentStatus;
+}
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  password?: string;
+  name: string;
+  role: UserRole;
+  associatedId?: string;
+  createdAt: string;
 }
 
 export interface AttendanceRecord {
