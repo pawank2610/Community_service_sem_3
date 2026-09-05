@@ -7,6 +7,7 @@ import WhatsAppFloatingButton from '@/components/WhatsAppFloatingButton';
 import SEOStructuredData from '@/components/SEOStructuredData';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://primelearning.edu.in'),
   title: 'Prime Learning Classes | Maths, Science & Tutoring in Sec-22B, Gurgaon',
   description: 'Prime Learning Classes offers expert tutoring for Class 1-5 (All Subjects), Class 6-10 (Maths & Science), and Class 11-12 (Maths & Chemistry). Faculty: Praveen Gandhi (Maths) & Rashmi Anand (Science).',
   keywords: [
