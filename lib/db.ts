@@ -1,4 +1,4 @@
-import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings } from './types';
+import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge } from './types';
 
 // Re-export mock data for local storage initialization
 import { 
@@ -346,4 +346,133 @@ export const db = {
     setStoredData('study_materials', updated);
     return updated;
   },
+
+  // Fee Payments & Receipts
+  getPayments: (): FeePayment[] => {
+    return getStoredData('payments', [
+      {
+        id: 'pay-1',
+        receiptNo: 'PLC-2026-0901',
+        studentId: 'std-1',
+        studentName: 'Rohan Mehta',
+        parentName: 'Sunil Mehta',
+        courseTitle: 'Class 10 Maths & Science (Combined)',
+        grade: 'Class 10',
+        amount: '₹5,000',
+        paymentMethod: 'UPI',
+        transactionId: 'UPI-9810989437-09012',
+        paymentDate: '2026-09-01',
+        monthPaidFor: 'September 2026',
+        status: 'SUCCESS',
+      },
+    ]);
+  },
+  recordPayment: (paymentData: Omit<FeePayment, 'id' | 'receiptNo' | 'transactionId' | 'paymentDate' | 'status'>): FeePayment => {
+    const current = getStoredData<FeePayment[]>('payments', []);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const newPayment: FeePayment = {
+      ...paymentData,
+      id: `pay-${Date.now()}`,
+      receiptNo: `PLC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      transactionId: `UPI-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      paymentDate: dateStr,
+      status: 'SUCCESS',
+    };
+    const updated = [newPayment, ...current];
+    setStoredData('payments', updated);
+    return newPayment;
+  },
+
+  // Leave Requests & Makeup Portal
+  getLeaveRequests: (): LeaveRequest[] => {
+    return getStoredData('leave_requests', [
+      {
+        id: 'leave-1',
+        studentId: 'std-1',
+        studentName: 'Rohan Mehta',
+        grade: 'Class 10',
+        startDate: '2026-09-10',
+        endDate: '2026-09-11',
+        reason: 'School sports tournament event',
+        makeupClassRequested: true,
+        status: 'APPROVED',
+        makeupDate: '2026-09-13',
+        createdAt: '2026-09-02T10:00:00Z',
+      },
+    ]);
+  },
+  addLeaveRequest: (leaveData: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>): LeaveRequest => {
+    const current = getStoredData<LeaveRequest[]>('leave_requests', []);
+    const newLeave: LeaveRequest = {
+      ...leaveData,
+      id: `leave-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      status: 'PENDING',
+    };
+    const updated = [newLeave, ...current];
+    setStoredData('leave_requests', updated);
+    return newLeave;
+  },
+  updateLeaveStatus: (id: string, status: LeaveRequest['status'], makeupDate?: string): LeaveRequest[] => {
+    const current = getStoredData<LeaveRequest[]>('leave_requests', []);
+    const updated = current.map(l => {
+      if (l.id === id) {
+        return { ...l, status, makeupDate: makeupDate || l.makeupDate };
+      }
+      return l;
+    });
+    setStoredData('leave_requests', updated);
+    return updated;
+  },
+
+  // Gamified Badges
+  getBadges: (studentId?: string): StudentBadge[] => {
+    const all = getStoredData<StudentBadge[]>('student_badges', [
+      {
+        id: 'badge-1',
+        studentId: 'std-1',
+        title: '100% Attendance Master',
+        category: 'ATTENDANCE',
+        description: 'Attended all scheduled classes continuously this month',
+        iconName: 'CheckCircle2',
+        earnedDate: '2026-09-01',
+      },
+      {
+        id: 'badge-2',
+        studentId: 'std-1',
+        title: 'Math Wizard',
+        category: 'ACADEMIC',
+        description: 'Scored 90%+ in Quadratic Equations unit test',
+        iconName: 'Sparkles',
+        earnedDate: '2026-08-28',
+      },
+      {
+        id: 'badge-3',
+        studentId: 'std-1',
+        title: 'Science Scholar',
+        category: 'CONCEPT_MASTERY',
+        description: 'Completed all ray diagram numerical workbooks',
+        iconName: 'Award',
+        earnedDate: '2026-08-25',
+      },
+    ]);
+
+    if (studentId) {
+      return all.filter(b => b.studentId === studentId);
+    }
+    return all;
+  },
 };
+
+// Named Helper Exports
+export const getPayments = db.getPayments;
+export const recordPayment = db.recordPayment;
+export const getLeaveRequests = (studentId?: string) => {
+  const all = db.getLeaveRequests();
+  if (studentId) return all.filter(l => l.studentId === studentId);
+  return all;
+};
+export const addLeaveRequest = db.addLeaveRequest;
+export const updateLeaveStatus = db.updateLeaveStatus;
+export const getBadges = db.getBadges;
+

@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
-  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download
+  BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard
 } from 'lucide-react';
-import { db } from '@/lib/db';
+import { db, getPayments, getLeaveRequests, updateLeaveStatus } from '@/lib/db';
 import { 
   Enquiry, TrialRegistration, Student, Batch, Course, Teacher, 
   AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial 
@@ -15,7 +15,7 @@ import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function AdminDashboardView() {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'settings'
+    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'leaves' | 'settings'
   >('overview');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   
@@ -29,6 +29,8 @@ export default function AdminDashboardView() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [settings, setSettings] = useState<InstituteSettings>(db.getSettings());
+  const [payments, setPayments] = useState(getPayments());
+  const [leaveRequests, setLeaveRequestsState] = useState(getLeaveRequests());
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +100,8 @@ export default function AdminDashboardView() {
     setAnnouncements(db.getAnnouncements());
     setMaterials(db.getStudyMaterials());
     setSettings(db.getSettings());
+    setPayments(getPayments());
+    setLeaveRequestsState(getLeaveRequests());
   };
 
   const showToast = (msg: string) => {
@@ -368,6 +372,8 @@ export default function AdminDashboardView() {
               { id: 'teachers', label: `Faculty (${teachers.length})`, icon: Users },
               { id: 'batches', label: 'Batches & Timings', icon: Clock },
               { id: 'courses', label: 'Courses & Fees', icon: BookOpen },
+              { id: 'payments', label: `Fee Ledger (${payments.length})`, icon: CreditCard },
+              { id: 'leaves', label: `Leave Requests (${leaveRequests.filter(l=>l.status==='PENDING').length})`, icon: Calendar, badge: leaveRequests.filter(l=>l.status==='PENDING').length > 0 },
               { id: 'announcements', label: 'Announcements', icon: Bell },
               { id: 'materials', label: 'Study Resources', icon: Download },
               { id: 'attendance', label: 'Mark Attendance', icon: CheckCircle2 },
@@ -1093,6 +1099,140 @@ export default function AdminDashboardView() {
                 Save Test Score
               </button>
             </form>
+          </div>
+        )}
+
+        {/* TAB: PAYMENTS LEDGER */}
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900">Fee Collection & Digital Receipts Ledger</h1>
+                <p className="text-xs text-slate-500">Live record of online UPI payments, cash receipts, and transaction IDs</p>
+              </div>
+              <div className="px-4 py-2 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200">
+                Total Collected: ₹{payments.reduce((acc, curr) => acc + (parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0), 0).toLocaleString('en-IN')}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="p-4">Receipt #</th>
+                    <th className="p-4">Student & Class</th>
+                    <th className="p-4">Amount Paid</th>
+                    <th className="p-4">Payment Method</th>
+                    <th className="p-4">Transaction UTR</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {payments.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 italic">No payment receipts logged yet.</td>
+                    </tr>
+                  ) : (
+                    payments.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50">
+                        <td className="p-4 font-bold text-slate-900">{p.receiptNo}</td>
+                        <td className="p-4">
+                          <div className="font-bold text-slate-900">{p.studentName}</div>
+                          <div className="text-[10px] text-slate-500">{p.grade}</div>
+                        </td>
+                        <td className="p-4 font-black text-emerald-600 text-sm">{p.amount}</td>
+                        <td className="p-4 font-semibold">{p.paymentMethod}</td>
+                        <td className="p-4 font-mono text-[11px] text-slate-600">{p.transactionId}</td>
+                        <td className="p-4 text-slate-500">{p.paymentDate}</td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            {p.status.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: LEAVE REQUESTS */}
+        {activeTab === 'leaves' && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900">Student Leave Applications</h1>
+              <p className="text-xs text-slate-500">Review student absence notifications and grant makeup class approvals</p>
+            </div>
+
+            <div className="space-y-4">
+              {leaveRequests.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 italic bg-white rounded-2xl border border-slate-200">
+                  No student leave applications received.
+                </div>
+              ) : (
+                leaveRequests.map((leave) => (
+                  <div key={leave.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-slate-900 text-base">{leave.studentName}</span>
+                        <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          {leave.grade}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                          leave.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                          leave.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {leave.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        <strong>Leave Duration:</strong> {leave.startDate} to {leave.endDate}
+                      </p>
+                      <p className="text-xs text-slate-500 italic">
+                        "{leave.reason}"
+                      </p>
+                      {leave.makeupDate && (
+                        <div className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100 inline-block mt-1">
+                          🗓️ Makeup Class: {leave.makeupDate}
+                        </div>
+                      )}
+                    </div>
+
+                    {leave.status === 'PENDING' && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            const schedule = prompt('Enter Makeup Class Schedule for ' + leave.studentName + ':', 'Sunday 11:00 AM Doubt Batch');
+                            if (schedule !== null) {
+                              updateLeaveStatus(leave.id, 'APPROVED', schedule);
+                              refreshData();
+                              showToast('Leave approved!');
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition"
+                        >
+                          Approve & Schedule
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            updateLeaveStatus(leave.id, 'REJECTED');
+                            refreshData();
+                            showToast('Leave rejected.');
+                          }}
+                          className="px-4 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-xs transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 

@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode } from 'lucide-react';
-import { db } from '@/lib/db';
+import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, ChevronRight } from 'lucide-react';
+import { db, getBadges, getLeaveRequests } from '@/lib/db';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRScannerModal from '@/components/QRScannerModal';
+import FeePaymentModal from '@/components/FeePaymentModal';
+import LeaveRequestModal from '@/components/LeaveRequestModal';
 
 export default function StudentDashboardView() {
   const settings = db.getSettings();
   const students = db.getStudents();
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [feeModalOpen, setFeeModalOpen] = useState(false);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const student = students[0] || {
@@ -61,22 +65,38 @@ export default function StudentDashboardView() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setScannerOpen(true)}
-              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-2 animate-bounce-slow"
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-1.5"
             >
               <QrCode className="w-4 h-4" />
-              <span>Scan Classroom QR</span>
+              <span>Scan QR</span>
+            </button>
+
+            <button
+              onClick={() => setFeeModalOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 transition shadow flex items-center space-x-1.5"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Pay Fee (UPI)</span>
+            </button>
+
+            <button
+              onClick={() => setLeaveModalOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition shadow flex items-center space-x-1.5"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Apply Leave</span>
             </button>
 
             <a
               href={teacherWaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 transition shadow flex items-center space-x-1.5"
+              className="px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition flex items-center space-x-1"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span>Contact Teacher</span>
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Teacher</span>
             </a>
-            <a href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">
+            <a href="/" className="px-2.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">
               Exit
             </a>
           </div>
@@ -171,6 +191,85 @@ export default function StudentDashboardView() {
               </div>
             </div>
 
+            {/* AI Learning Analytics & Weak Area Insights */}
+            <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg border border-indigo-900/40 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30 text-indigo-400">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center">
+                      AI Learning Analytics & Mastery Insights
+                    </h3>
+                    <p className="text-[11px] text-indigo-200">Powered by Praveen Gandhi & Rashmi Anand's Curriculum Engine</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center space-x-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Real-time AI Diagnosis</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/50 space-y-3">
+                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex justify-between">
+                    <span>Topic Mastery Breakdown</span>
+                    <span className="text-emerald-400">88% Overall</span>
+                  </div>
+                  <div className="space-y-2.5 text-xs">
+                    <div>
+                      <div className="flex justify-between text-[11px] mb-1">
+                        <span className="text-slate-300">Quadratic & Polynomials</span>
+                        <span className="font-bold text-emerald-400">95% (Strong)</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '95%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] mb-1">
+                        <span className="text-slate-300">Trigonometry & Heights</span>
+                        <span className="font-bold text-amber-400">72% (Requires Practice)</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-500 rounded-full" style={{ width: '72%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] mb-1">
+                        <span className="text-slate-300">Chemical Reactions & Equations</span>
+                        <span className="font-bold text-emerald-400">90% (Strong)</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '90%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-950/30 p-4 rounded-2xl border border-amber-800/40 space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <span>Weak Area Alert & Action Plan</span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                      AI identified low performance in <strong>Trigonometrical Identities & Heights</strong>. We recommend taking the targeted practice sheet before next Monday's test.
+                    </p>
+                  </div>
+
+                  <a
+                    href={materials[0]?.downloadUrl || '#'}
+                    className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow transition"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Recommended Practice Sheet</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
             {/* Attendance History */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-900 flex items-center">
@@ -197,6 +296,76 @@ export default function StudentDashboardView() {
           {/* Right Column (4 cols): Announcements & Study Resources */}
           <div className="lg:col-span-4 space-y-6">
             
+            {/* Gamified Badges */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-slate-900 flex items-center">
+                  <Award className="w-5 h-5 text-amber-500 mr-2" />
+                  Gamified Achievement Badges
+                </h3>
+                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                  Rank #2
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {getBadges(student.id).map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="p-3 rounded-2xl bg-gradient-to-b from-amber-50/50 to-orange-50/50 border border-amber-200/80 text-center space-y-1 hover:scale-105 transition-transform"
+                  >
+                    <div className="text-2xl">{badge.iconName === 'CheckCircle2' ? '🌟' : badge.iconName === 'Sparkles' ? '📐' : '🧪'}</div>
+                    <div className="text-[11px] font-bold text-slate-900 leading-tight">{badge.title}</div>
+                    <div className="text-[9px] text-slate-500 line-clamp-1">{badge.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Leave Requests Status */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-slate-900 flex items-center">
+                  <Clock className="w-5 h-5 text-indigo-600 mr-2" />
+                  Leave & Makeup Class Status
+                </h3>
+                <button
+                  onClick={() => setLeaveModalOpen(true)}
+                  className="text-xs text-indigo-600 font-bold hover:underline"
+                >
+                  + Apply
+                </button>
+              </div>
+
+              {getLeaveRequests(student.id).length === 0 ? (
+                <div className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl text-center">
+                  No leave requests submitted yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {getLeaveRequests(student.id).map((lr) => (
+                    <div key={lr.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-900">{lr.startDate} to {lr.endDate}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          lr.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                          lr.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {lr.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">{lr.reason}</p>
+                      {lr.makeupDate && (
+                        <div className="mt-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 p-1.5 rounded-lg border border-indigo-100">
+                          🗓️ Makeup: {lr.makeupDate}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Announcements */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-900 flex items-center">
@@ -248,6 +417,29 @@ export default function StudentDashboardView() {
           isOpen={scannerOpen}
           onClose={() => setScannerOpen(false)}
           onSuccess={() => {
+            setRefreshKey(k => k + 1);
+          }}
+        />
+
+        <FeePaymentModal
+          isOpen={feeModalOpen}
+          onClose={() => setFeeModalOpen(false)}
+          studentId={student.id}
+          studentName={student.studentName}
+          studentClass={student.grade}
+          monthlyFee={3500}
+          onPaymentSuccess={() => {
+            setRefreshKey(k => k + 1);
+          }}
+        />
+
+        <LeaveRequestModal
+          isOpen={leaveModalOpen}
+          onClose={() => setLeaveModalOpen(false)}
+          studentId={student.id}
+          studentName={student.studentName}
+          studentClass={student.grade}
+          onSubmitted={() => {
             setRefreshKey(k => k + 1);
           }}
         />

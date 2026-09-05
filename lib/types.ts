@@ -181,3 +181,43 @@ export interface StudyMaterial {
   downloadUrl: string;
   date: string;
 }
+
+export interface FeePayment {
+  id: string;
+  receiptNo: string;
+  studentId: string;
+  studentName: string;
+  parentName: string;
+  courseTitle: string;
+  grade: string;
+  amount: string;
+  paymentMethod: 'UPI' | 'CARD' | 'CASH';
+  transactionId: string;
+  paymentDate: string;
+  monthPaidFor: string;
+  status: 'SUCCESS' | 'PENDING';
+}
+
+export interface LeaveRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  grade: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  makeupClassRequested: boolean;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  makeupDate?: string;
+  createdAt: string;
+}
+
+export interface StudentBadge {
+  id: string;
+  studentId: string;
+  title: string;
+  category: 'ATTENDANCE' | 'ACADEMIC' | 'CONCEPT_MASTERY';
+  description: string;
+  iconName: string;
+  earnedDate: string;
+}

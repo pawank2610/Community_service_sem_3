@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { IndianRupee, Clock, Calendar, Users, GraduationCap, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { IndianRupee, Clock, Calendar, Users, GraduationCap, MessageSquare, CheckCircle2, CreditCard } from 'lucide-react';
 import { db } from '@/lib/db';
 import EnquiryModal from '@/components/EnquiryModal';
 import TrialForm from '@/components/TrialForm';
+import FeePaymentModal from '@/components/FeePaymentModal';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 
 export default function FeesPage() {
@@ -15,6 +16,7 @@ export default function FeesPage() {
 
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [enquiryModalOpen, setEnquiryModalOpen] = useState(false);
+  const [feePaymentOpen, setFeePaymentOpen] = useState(false);
 
   return (
     <div className="py-12 bg-white space-y-12">
@@ -44,7 +46,14 @@ export default function FeesPage() {
               <p className="text-xs text-slate-400">Classes taught in small batches of maximum 15 students</p>
             </div>
 
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFeePaymentOpen(true)}
+                className="py-2 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition shadow flex items-center space-x-1.5"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Pay Fee Online (UPI)</span>
+              </button>
               <button
                 onClick={() => setTrialModalOpen(true)}
                 className="py-2 px-4 rounded-xl text-xs font-bold text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow"
@@ -147,6 +156,15 @@ export default function FeesPage() {
           </div>
         </div>
       )}
+
+      <FeePaymentModal
+        isOpen={feePaymentOpen}
+        onClose={() => setFeePaymentOpen(false)}
+        studentId="std-1"
+        studentName="Rohan Mehta"
+        studentClass="Class 10"
+        monthlyFee={3500}
+      />
 
     </div>
   );

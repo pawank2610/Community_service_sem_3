@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode } from 'lucide-react';
-import { db } from '@/lib/db';
+import { Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode, MessageSquare, Clock, Check, X } from 'lucide-react';
+import { db, getLeaveRequests, updateLeaveStatus } from '@/lib/db';
 import { Student, Batch } from '@/lib/types';
+import { getWhatsAppLink } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 
 export default function TeacherDashboardView() {
-  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks'>('batches');
+  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'leaves'>('batches');
   const batches = db.getBatches();
   const students = db.getStudents();
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0]?.id || '');
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'Present' | 'Absent'>>({});
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const selectedBatch = batches.find(b => b.id === selectedBatchId) || batches[0];
 
@@ -27,6 +29,20 @@ export default function TeacherDashboardView() {
   });
 
   const [message, setMessage] = useState<string | null>(null);
+
+  const handleApproveLeave = (leaveId: string, makeupText: string) => {
+    updateLeaveStatus(leaveId, 'APPROVED', makeupText || 'Sunday 11:00 AM Special Doubt Class');
+    setMessage('Leave request approved & makeup class assigned!');
+    setRefreshKey(k => k + 1);
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleRejectLeave = (leaveId: string) => {
+    updateLeaveStatus(leaveId, 'REJECTED');
+    setMessage('Leave request rejected.');
+    setRefreshKey(k => k + 1);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleSaveAttendance = () => {
     const batchStudents = students.filter(s => s.batchId === selectedBatchId);
@@ -93,11 +109,12 @@ export default function TeacherDashboardView() {
         )}
 
         {/* Tab Buttons */}
-        <div className="flex space-x-2 border-b border-slate-200 pb-2">
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
           {[
             { id: 'batches', label: 'My Batches', icon: BookOpen },
             { id: 'attendance', label: 'Mark Batch Attendance', icon: CheckCircle2 },
             { id: 'marks', label: 'Enter Test Scores', icon: FileText },
+            { id: 'leaves', label: 'Leave Requests & Makeup', icon: Clock },
           ].map(tab => (
             <button
               key={tab.id}
@@ -178,32 +195,51 @@ export default function TeacherDashboardView() {
               </div>
             </div>
 
-            <div className="space-y-2 max-w-md">
+            <div className="space-y-2 max-w-lg">
               {students
                 .filter(s => s.batchId === selectedBatchId)
-                .map(st => (
-                  <div key={st.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                    <span className="font-bold text-slate-900">{st.studentName}</span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setAttendanceMap({ ...attendanceMap, [st.id]: 'Present' })}
-                        className={`px-3 py-1 rounded-lg font-bold text-xs ${
-                          (attendanceMap[st.id] || 'Present') === 'Present' ? 'bg-emerald-600 text-white' : 'bg-slate-200'
-                        }`}
-                      >
-                        Present
-                      </button>
-                      <button
-                        onClick={() => setAttendanceMap({ ...attendanceMap, [st.id]: 'Absent' })}
-                        className={`px-3 py-1 rounded-lg font-bold text-xs ${
-                          attendanceMap[st.id] === 'Absent' ? 'bg-rose-600 text-white' : 'bg-slate-200'
-                        }`}
-                      >
-                        Absent
-                      </button>
+                .map(st => {
+                  const status = attendanceMap[st.id] || 'Present';
+                  const waText = `Dear Parent (${st.parentName}), this is from Prime Learning Classes Gurgaon. Attendance alert for ${st.studentName} on ${attendanceDate}: marked ${status.toUpperCase()}.`;
+                  const waUrl = getWhatsAppLink('919876543210', waText);
+
+                  return (
+                    <div key={st.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-900">{st.studentName}</span>
+                        <div className="text-[10px] text-slate-500">Parent: {st.parentName}</div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setAttendanceMap({ ...attendanceMap, [st.id]: 'Present' })}
+                          className={`px-3 py-1 rounded-lg font-bold text-xs ${
+                            status === 'Present' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          Present
+                        </button>
+                        <button
+                          onClick={() => setAttendanceMap({ ...attendanceMap, [st.id]: 'Absent' })}
+                          className={`px-3 py-1 rounded-lg font-bold text-xs ${
+                            status === 'Absent' ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          Absent
+                        </button>
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition font-bold flex items-center space-x-1"
+                          title="Send 1-Click WhatsApp Parent Alert"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline text-[10px]">WA Alert</span>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
 
             <button
@@ -276,13 +312,98 @@ export default function TeacherDashboardView() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="py-3 px-6 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover shadow transition"
-              >
-                Log Test Score
-              </button>
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="submit"
+                  className="py-3 px-6 rounded-xl font-bold text-xs text-white bg-prime-orange hover:bg-prime-orange-hover shadow transition"
+                >
+                  Log Test Score
+                </button>
+
+                {testForm.studentId && (
+                  <a
+                    href={getWhatsAppLink('919876543210', `Dear Parent, ${students.find(s=>s.id===testForm.studentId)?.studentName} scored ${testForm.marksObtained}/${testForm.maxMarks} in ${testForm.testName} (${testForm.subject}). Remarks: ${testForm.remarks}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-3 px-4 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow transition flex items-center space-x-1.5"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Send WhatsApp Mark Alert</span>
+                  </a>
+                )}
+              </div>
             </form>
+          </div>
+        )}
+
+        {/* TAB 4: LEAVE REQUESTS & MAKEUP CLASS SCHEDULER */}
+        {activeTab === 'leaves' && (
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Student Leave & Automated Makeup Class Portal</h2>
+              <p className="text-xs text-slate-500">Review student absence notifications and schedule makeup doubt sessions</p>
+            </div>
+
+            <div className="space-y-4">
+              {getLeaveRequests().length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400 italic bg-slate-50 rounded-2xl">
+                  No student leave applications found.
+                </div>
+              ) : (
+                getLeaveRequests().map((leave) => (
+                  <div key={leave.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-slate-900 text-sm">{leave.studentName}</span>
+                        <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          {leave.grade}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          leave.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                          leave.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {leave.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        <strong>Leave Duration:</strong> {leave.startDate} to {leave.endDate}
+                      </p>
+                      <p className="text-xs text-slate-500 italic">
+                        "{leave.reason}"
+                      </p>
+                      {leave.makeupDate && (
+                        <div className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block mt-1">
+                          🗓️ Assigned Makeup: {leave.makeupDate}
+                        </div>
+                      )}
+                    </div>
+
+                    {leave.status === 'PENDING' && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            const schedule = prompt('Enter Makeup Class Schedule for ' + leave.studentName + ':', 'Sunday 11:00 AM Doubt Batch');
+                            if (schedule !== null) handleApproveLeave(leave.id, schedule);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1 shadow transition"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Approve & Schedule</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleRejectLeave(leave.id)}
+                          className="px-3.5 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-xs flex items-center space-x-1 transition"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Reject</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
