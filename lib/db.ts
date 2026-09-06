@@ -315,6 +315,17 @@ export const db = {
     setStoredData('test_results', updated);
     return newResult;
   },
+  addBulkTestResults: (results: Omit<TestResult, 'id' | 'percentage'>[]): TestResult[] => {
+    const current = getStoredData<TestResult[]>('test_results', MOCK_TEST_RESULTS);
+    const newItems: TestResult[] = results.map((res, index) => ({
+      ...res,
+      id: `test-${Date.now()}-${index}`,
+      percentage: Math.round((res.marksObtained / res.maxMarks) * 100),
+    }));
+    const updated = [...newItems, ...current];
+    setStoredData('test_results', updated);
+    return newItems;
+  },
 
   // Testimonials
   getTestimonials: (): Testimonial[] => {
@@ -399,6 +410,28 @@ export const db = {
     const updated = [newPayment, ...current];
     setStoredData('payments', updated);
     return newPayment;
+  },
+  getPendingFeeStudents: (targetMonth?: string): { student: Student; monthlyFee: string }[] => {
+    const students = getStoredData<Student[]>('students', MOCK_STUDENTS).filter(s => s.status === 'Active');
+    const payments = getStoredData<FeePayment[]>('payments', []);
+    const courses = getStoredData<Course[]>('courses', MOCK_COURSES);
+    const month = targetMonth || `${new Date().toLocaleString('en-US', { month: 'long' })} ${new Date().getFullYear()}`;
+    
+    const paidStudentIds = new Set(
+      payments
+        .filter(p => p.monthPaidFor.toLowerCase() === month.toLowerCase() && p.status === 'SUCCESS')
+        .map(p => p.studentId)
+    );
+
+    return students
+      .filter(s => !paidStudentIds.has(s.id))
+      .map(s => {
+        const course = courses.find(c => c.grade === s.grade);
+        return {
+          student: s,
+          monthlyFee: course?.monthlyFee || '₹3,500',
+        };
+      });
   },
 
   // Leave Requests & Makeup Portal
@@ -709,6 +742,8 @@ export const getQuizResults = db.getQuizResults;
 export const getUserAccounts = db.getUserAccounts;
 export const saveUserAccount = db.saveUserAccount;
 export const findUserAccount = db.findUserAccount;
+export const addBulkTestResults = db.addBulkTestResults;
+export const getPendingFeeStudents = db.getPendingFeeStudents;
 
 
 
