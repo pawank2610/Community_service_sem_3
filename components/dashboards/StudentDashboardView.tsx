@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, ChevronRight, Video, HelpCircle, Printer, Target, BookOpen } from 'lucide-react';
-import { db, getBadges, getLeaveRequests, getVideoLessons, getDoubts, getQuizResults } from '@/lib/db';
+import { db, getBadges, getLeaveRequests, getVideoLessons, getDoubts, getQuizResults, getPayments } from '@/lib/db';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRScannerModal from '@/components/QRScannerModal';
 import FeePaymentModal from '@/components/FeePaymentModal';
@@ -42,6 +42,12 @@ export default function StudentDashboardView() {
   const testResults = db.getTestResults().filter(t => t.studentId === student.id);
   const announcements = db.getAnnouncements();
   const materials = db.getStudyMaterials();
+  const allPayments = db.getPayments();
+  const studentPayments = allPayments.filter(p => 
+    p.studentId === student.id || 
+    p.studentName.toLowerCase().trim() === student.studentName.toLowerCase().trim() ||
+    p.studentId === 'std-1'
+  );
 
   const totalClasses = attendance.length || 10;
   const presentClasses = attendance.filter(a => a.status === 'Present').length || 9;
@@ -161,6 +167,44 @@ export default function StudentDashboardView() {
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
               <User className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+
+        {/* Attendance Health & CBSE Eligibility Indicator */}
+        <div className={`p-5 rounded-2xl border transition-all ${
+          attendancePercentage >= 75
+            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+            : 'bg-rose-50/80 border-rose-200 text-rose-900'
+        }`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${
+                attendancePercentage >= 75 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+              }`}>
+                {attendancePercentage >= 75 ? '✓' : '!'}
+              </div>
+              <div>
+                <div className="text-xs font-black uppercase tracking-wider">
+                  CBSE Board Exam Eligibility: {attendancePercentage >= 75 ? 'Eligible & On Track' : 'Action Required (< 75%)'}
+                </div>
+                <div className="text-xs mt-0.5 text-slate-700">
+                  {attendancePercentage >= 75
+                    ? `Current attendance is ${attendancePercentage}%, meeting the 75% CBSE Board exam eligibility requirement. Keep attending consistently!`
+                    : `Current attendance is ${attendancePercentage}%, which is below the 75% minimum threshold for CBSE board admit card clearance. Please attend regular classes consistently.`}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 text-xs font-bold shrink-0">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 shadow-sm">
+                Min. 75% CBSE
+              </span>
+              <span className={`px-3 py-1 rounded-full font-bold text-white ${
+                attendancePercentage >= 75 ? 'bg-emerald-600' : 'bg-rose-600'
+              }`}>
+                {attendancePercentage}% Current
+              </span>
             </div>
           </div>
         </div>
@@ -503,6 +547,53 @@ export default function StudentDashboardView() {
                     </a>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Fee Invoices & Digital Receipts */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-slate-900 flex items-center">
+                  <CreditCard className="w-5 h-5 text-emerald-600 mr-2" />
+                  Fee Invoices & Receipts
+                </h3>
+                <button
+                  onClick={() => setFeeModalOpen(true)}
+                  className="text-xs text-emerald-700 font-bold hover:underline"
+                >
+                  + Pay Fees
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {studentPayments.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 italic text-center">
+                    No payment receipts found. Click Pay Fees above to complete registration.
+                  </div>
+                ) : (
+                  studentPayments.map(p => (
+                    <div key={p.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-900">{p.monthPaidFor}</span>
+                        <span className="font-black text-emerald-700">{p.amount}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500">
+                        <span>Receipt #{p.receiptNo}</span>
+                        <span>{p.paymentDate}</span>
+                      </div>
+                      <div className="pt-1 flex items-center justify-between border-t border-slate-200/60">
+                        <span className="text-[10px] text-slate-600 font-medium">Paid via {p.paymentMethod}</span>
+                        <button
+                          onClick={() => setFeeModalOpen(true)}
+                          className="text-[10px] font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-sm transition"
+                        >
+                          <Printer className="w-3 h-3 text-slate-600" />
+                          <span>View Official Receipt</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

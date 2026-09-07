@@ -6,7 +6,7 @@ import {
   BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone,
   Lock, KeyRound, Mail
 } from 'lucide-react';
-import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt } from '@/lib/db';
+import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt, getPendingFeeStudents } from '@/lib/db';
 import { 
   Enquiry, TrialRegistration, Student, Batch, Course, Teacher, 
   AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial, StudentDoubt 
@@ -28,6 +28,8 @@ export default function AdminDashboardView() {
   const [students, setStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [trialViewMode, setTrialViewMode] = useState<'table' | 'crm'>('crm');
+  const [paymentViewMode, setPaymentViewMode] = useState<'ledger' | 'dues'>('ledger');
   const [courses, setCourses] = useState<Course[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
@@ -635,57 +637,153 @@ export default function AdminDashboardView() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-black text-slate-900">Free Trial Registrations</h1>
-                <p className="text-xs text-slate-500">Manage free demo class bookings</p>
+                <h1 className="text-2xl font-black text-slate-900">Free Trial Registrations & CRM Pipeline</h1>
+                <p className="text-xs text-slate-500">Track candidates from initial registration to demo class and enrollment</p>
+              </div>
+
+              <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setTrialViewMode('crm')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    trialViewMode === 'crm' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  Visual CRM Board
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTrialViewMode('table')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    trialViewMode === 'table' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  Table View
+                </button>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="p-4">Student & Parent</th>
-                    <th className="p-4">Contact</th>
-                    <th className="p-4">Class & Subject</th>
-                    <th className="p-4">Preferred Teacher</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {trials.map((tr) => (
-                    <tr key={tr.id} className="hover:bg-slate-50/80">
-                      <td className="p-4">
-                        <div className="font-bold text-slate-900">{tr.studentName}</div>
-                        <div className="text-[10px] text-slate-500">Parent: {tr.parentName}</div>
-                      </td>
-                      <td className="p-4 font-semibold">{tr.phone}</td>
-                      <td className="p-4"><span className="font-bold">{tr.grade}</span> - {tr.subject}</td>
-                      <td className="p-4 font-bold text-prime-orange">{tr.preferredTeacher}</td>
-                      <td className="p-4">
-                        <select
-                          value={tr.status}
-                          onChange={(e) => handleUpdateTrialStatus(tr.id, e.target.value as TrialStatus)}
-                          className="px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold bg-white"
-                        >
-                          <option value="Registered">Registered</option>
-                          <option value="Contacted">Contacted</option>
-                          <option value="Scheduled">Scheduled</option>
-                          <option value="Attended">Attended</option>
-                          <option value="Converted">Converted</option>
-                          <option value="Not Converted">Not Converted</option>
-                        </select>
-                      </td>
-                      <td className="p-4 flex items-center space-x-2">
-                        <button onClick={() => handleDeleteTrial(tr.id)} className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200" title="Delete">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+            {trialViewMode === 'crm' ? (
+              /* CRM Kanban Board */
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {(['Registered', 'Contacted', 'Scheduled', 'Attended', 'Converted'] as TrialStatus[]).map((stage) => {
+                  const stageTrials = trials.filter(t => t.status === stage);
+                  return (
+                    <div key={stage} className="bg-slate-50 rounded-2xl border border-slate-200 p-3.5 space-y-3 flex flex-col">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <span className="font-black text-xs text-slate-900 uppercase tracking-wider">{stage}</span>
+                        <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
+                          {stageTrials.length}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[520px]">
+                        {stageTrials.length === 0 ? (
+                          <div className="p-4 text-center text-[11px] text-slate-400 italic bg-white/60 rounded-xl border border-dashed border-slate-200">
+                            No students in this stage
+                          </div>
+                        ) : (
+                          stageTrials.map(tr => {
+                            const waUrl = getWhatsAppLink(
+                              tr.whatsapp || tr.phone,
+                              `Hello ${tr.parentName}, this is from Prime Learning Classes Gurgaon regarding ${tr.studentName}'s trial class for ${tr.grade} (${tr.subject}). Are you available for a quick update?`
+                            );
+
+                            return (
+                              <div key={tr.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs">
+                                <div>
+                                  <span className="font-bold text-slate-900 block">{tr.studentName}</span>
+                                  <span className="text-[10px] text-slate-500">Parent: {tr.parentName}</span>
+                                </div>
+
+                                <div className="text-[10px] space-y-0.5 text-slate-600">
+                                  <div>Class: <strong className="text-slate-900">{tr.grade}</strong> ({tr.subject})</div>
+                                  <div>Faculty: <strong className="text-prime-orange">{tr.preferredTeacher}</strong></div>
+                                </div>
+
+                                <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[10px] flex items-center space-x-1"
+                                    title="WhatsApp Parent"
+                                  >
+                                    <MessageSquare className="w-3 h-3" />
+                                    <span>Chat</span>
+                                  </a>
+
+                                  <select
+                                    value={tr.status}
+                                    onChange={(e) => handleUpdateTrialStatus(tr.id, e.target.value as TrialStatus)}
+                                    className="text-[10px] font-bold p-1 rounded border border-slate-200 bg-slate-50 text-slate-700"
+                                  >
+                                    <option value="Registered">Registered</option>
+                                    <option value="Contacted">Contacted</option>
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Attended">Attended</option>
+                                    <option value="Converted">Converted</option>
+                                    <option value="Not Converted">Not Converted</option>
+                                  </select>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Table View */
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Student & Parent</th>
+                      <th className="p-4">Contact</th>
+                      <th className="p-4">Class & Subject</th>
+                      <th className="p-4">Preferred Teacher</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {trials.map((tr) => (
+                      <tr key={tr.id} className="hover:bg-slate-50/80">
+                        <td className="p-4">
+                          <div className="font-bold text-slate-900">{tr.studentName}</div>
+                          <div className="text-[10px] text-slate-500">Parent: {tr.parentName}</div>
+                        </td>
+                        <td className="p-4 font-semibold">{tr.phone}</td>
+                        <td className="p-4"><span className="font-bold">{tr.grade}</span> - {tr.subject}</td>
+                        <td className="p-4 font-bold text-prime-orange">{tr.preferredTeacher}</td>
+                        <td className="p-4">
+                          <select
+                            value={tr.status}
+                            onChange={(e) => handleUpdateTrialStatus(tr.id, e.target.value as TrialStatus)}
+                            className="px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold bg-white"
+                          >
+                            <option value="Registered">Registered</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Attended">Attended</option>
+                            <option value="Converted">Converted</option>
+                            <option value="Not Converted">Not Converted</option>
+                          </select>
+                        </td>
+                        <td className="p-4 flex items-center space-x-2">
+                          <button onClick={() => handleDeleteTrial(tr.id)} className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1143,60 +1241,148 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* TAB: PAYMENTS LEDGER */}
+        {/* TAB: PAYMENTS LEDGER & FEE DEFAULTER TRACKER */}
         {activeTab === 'payments' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-black text-slate-900">Fee Collection & Digital Receipts Ledger</h1>
-                <p className="text-xs text-slate-500">Live record of online UPI payments, cash receipts, and transaction IDs</p>
+                <h1 className="text-2xl font-black text-slate-900">Fee Collection & Dues Tracker</h1>
+                <p className="text-xs text-slate-500">Track digital receipts, collected revenue, and outstanding month dues</p>
               </div>
-              <div className="px-4 py-2 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200">
-                Total Collected: ₹{payments.reduce((acc, curr) => acc + (parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0), 0).toLocaleString('en-IN')}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentViewMode('ledger')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      paymentViewMode === 'ledger' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                    }`}
+                  >
+                    Payments Ledger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentViewMode('dues')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      paymentViewMode === 'dues' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                    }`}
+                  >
+                    Pending Dues ({getPendingFeeStudents().length})
+                  </button>
+                </div>
+
+                <div className="px-4 py-2 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200">
+                  Total Collected: ₹{payments.reduce((acc, curr) => acc + (parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0), 0).toLocaleString('en-IN')}
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="p-4">Receipt #</th>
-                    <th className="p-4">Student & Class</th>
-                    <th className="p-4">Amount Paid</th>
-                    <th className="p-4">Payment Method</th>
-                    <th className="p-4">Transaction UTR</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {payments.length === 0 ? (
+            {paymentViewMode === 'ledger' ? (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-slate-400 italic">No payment receipts logged yet.</td>
+                      <th className="p-4">Receipt #</th>
+                      <th className="p-4">Student & Class</th>
+                      <th className="p-4">Amount Paid</th>
+                      <th className="p-4">Payment Method</th>
+                      <th className="p-4">Transaction UTR</th>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Status</th>
                     </tr>
-                  ) : (
-                    payments.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-bold text-slate-900">{p.receiptNo}</td>
-                        <td className="p-4">
-                          <div className="font-bold text-slate-900">{p.studentName}</div>
-                          <div className="text-[10px] text-slate-500">{p.grade}</div>
-                        </td>
-                        <td className="p-4 font-black text-emerald-600 text-sm">{p.amount}</td>
-                        <td className="p-4 font-semibold">{p.paymentMethod}</td>
-                        <td className="p-4 font-mono text-[11px] text-slate-600">{p.transactionId}</td>
-                        <td className="p-4 text-slate-500">{p.paymentDate}</td>
-                        <td className="p-4">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            {p.status.toUpperCase()}
-                          </span>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {payments.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-6 text-center text-slate-400 italic">No payment receipts logged yet.</td>
+                      </tr>
+                    ) : (
+                      payments.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-50">
+                          <td className="p-4 font-bold text-slate-900">{p.receiptNo}</td>
+                          <td className="p-4">
+                            <div className="font-bold text-slate-900">{p.studentName}</div>
+                            <div className="text-[10px] text-slate-500">{p.grade}</div>
+                          </td>
+                          <td className="p-4 font-black text-emerald-600 text-sm">{p.amount}</td>
+                          <td className="p-4 font-semibold">{p.paymentMethod}</td>
+                          <td className="p-4 font-mono text-[11px] text-slate-600">{p.transactionId}</td>
+                          <td className="p-4 text-slate-500">{p.paymentDate}</td>
+                          <td className="p-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              {p.status.toUpperCase()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Pending Dues & Defaulter Tracker */
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-rose-50 text-rose-900 uppercase font-bold border-b border-rose-100">
+                    <tr>
+                      <th className="p-4">Student Name</th>
+                      <th className="p-4">Parent & Contact</th>
+                      <th className="p-4">Grade & Batch</th>
+                      <th className="p-4">Monthly Fee Due</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">1-Click Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {getPendingFeeStudents().length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-emerald-600 font-bold">
+                          🎉 All active students have cleared their fees for the current month!
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      getPendingFeeStudents().map(({ student: st, monthlyFee }) => {
+                        const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
+                        const reminderMsg = `Dear Parent (${st.parentName}), this is a gentle fee reminder from Prime Learning Classes Gurgaon for ${st.studentName} (${st.grade}). The monthly tuition fee of ${monthlyFee} for ${currentMonth} is currently pending. Please remit via UPI: 9810989437@upi or visit institute reception. Thank you!`;
+                        const waReminderUrl = getWhatsAppLink(st.whatsapp || st.phone, reminderMsg);
+
+                        return (
+                          <tr key={st.id} className="hover:bg-slate-50">
+                            <td className="p-4 font-bold text-slate-900">{st.studentName}</td>
+                            <td className="p-4">
+                              <div className="font-semibold text-slate-800">{st.parentName}</div>
+                              <div className="text-[10px] text-slate-500">{st.phone}</div>
+                            </td>
+                            <td className="p-4">
+                              <span className="font-bold text-slate-900">{st.grade}</span>
+                              <div className="text-[10px] text-slate-500">{st.batchName}</div>
+                            </td>
+                            <td className="p-4 font-black text-rose-600 text-sm">{monthlyFee}</td>
+                            <td className="p-4">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                Pending Due
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <a
+                                href={waReminderUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp Fee Reminder</span>
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
