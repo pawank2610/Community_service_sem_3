@@ -1,4 +1,4 @@
-import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge, StudentDoubt, VideoLesson, QuizQuestion, QuizResult, UserAccount } from './types';
+import { Course, Teacher, Batch, Enquiry, TrialRegistration, Student, AttendanceRecord, TestResult, Testimonial, Announcement, StudyMaterial, InstituteSettings, FeePayment, LeaveRequest, StudentBadge, StudentDoubt, VideoLesson, QuizQuestion, QuizResult, UserAccount, CommunityImpactMetric, PtmBooking } from './types';
 
 // Re-export mock data for local storage initialization
 import { 
@@ -15,6 +15,72 @@ import {
   INITIAL_STUDY_MATERIALS as MOCK_STUDY_MATERIALS 
 } from './mockData';
 import { DEFAULT_SETTINGS as MOCK_SETTINGS } from './constants';
+
+const INITIAL_COMMUNITY_METRICS: CommunityImpactMetric[] = [
+  {
+    id: 'cim-1',
+    label: 'Free Trial Classes Provided',
+    value: '42+ Students',
+    change: '+180% vs previous term',
+    description: 'Democratized access to quality tuition by eliminating upfront admission fees for local families.',
+    sdgTag: 'SDG 4',
+  },
+  {
+    id: 'cim-2',
+    label: 'Educator Income Sustainability',
+    value: '+65% Growth',
+    change: 'Sec-22B Micro-Enterprise',
+    description: 'Streamlined batch enrollments and eliminated reliance on unorganized offline commission agents.',
+    sdgTag: 'SDG 8',
+  },
+  {
+    id: 'cim-3',
+    label: 'Digital Classroom Transition',
+    value: '100% Paperless',
+    change: 'QR Attendance & Fee Receipts',
+    description: 'Replaced torn paper registers with QR check-ins, computerized markbooks, and automated parent alerts.',
+    sdgTag: 'SDG 9',
+  },
+  {
+    id: 'cim-4',
+    label: 'CBSE Board Pass & Mastery Rate',
+    value: '96.4%',
+    change: 'Consistently above Gurgaon avg',
+    description: 'Personalized doubt clearance via 24/7 AI and teacher review queues for Maths and Science.',
+    sdgTag: 'SDG 4',
+  },
+  {
+    id: 'cim-5',
+    label: 'Community Service Hours Logged',
+    value: '75+ Hours',
+    change: 'Digital Onboarding & Tech Training',
+    description: 'Direct field hours dedicated to teacher technology training, Google Maps optimization, and curriculum digitization.',
+    sdgTag: 'SDG 9',
+  },
+  {
+    id: 'cim-6',
+    label: 'Average Parent Satisfaction',
+    value: '4.9 / 5.0 ★',
+    change: 'Across 60+ local reviews',
+    description: 'Transparent visibility into student attendance and monthly academic progress cards.',
+    sdgTag: 'SDG 4',
+  },
+];
+
+const INITIAL_PTM_BOOKINGS: PtmBooking[] = [
+  {
+    id: 'ptm-1',
+    studentId: 'std-1',
+    studentName: 'Aarav Sharma',
+    parentName: 'Ramesh Sharma',
+    parentPhone: '9810989437',
+    preferredTeacher: 'Praveen Gandhi (Maths)',
+    preferredSlot: 'Saturday, 4:30 PM - 4:45 PM',
+    concernArea: 'Pre-board Trigonometry preparation and test review',
+    status: 'CONFIRMED',
+    createdAt: '2026-03-01T10:30:00Z',
+  }
+];
 
 const STORAGE_PREFIX = 'prime_learning_';
 
@@ -715,6 +781,41 @@ export const db = {
       (!password || !a.password || a.password === password)
     );
   },
+
+  // PTM Bookings
+  getPtmBookings: (): PtmBooking[] => {
+    return getStoredData('ptm_bookings', INITIAL_PTM_BOOKINGS);
+  },
+  addPtmBooking: (booking: Omit<PtmBooking, 'id' | 'createdAt' | 'status'>): PtmBooking => {
+    const current = getStoredData<PtmBooking[]>('ptm_bookings', INITIAL_PTM_BOOKINGS);
+    const newBooking: PtmBooking = {
+      ...booking,
+      id: `ptm-${Date.now()}`,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    setStoredData('ptm_bookings', [newBooking, ...current]);
+    return newBooking;
+  },
+
+  // Community Metrics
+  getCommunityMetrics: (): CommunityImpactMetric[] => {
+    return getStoredData('community_metrics', INITIAL_COMMUNITY_METRICS);
+  },
+
+  // Parent Portal Student Lookup
+  getStudentByPhoneOrId: (query: string): Student | undefined => {
+    const students = db.getStudents();
+    const cleanQuery = query.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    if (!cleanQuery) return undefined;
+    return students.find(s => {
+      const phoneClean = s.phone.replace(/[^0-9]/g, '');
+      const waClean = s.whatsapp.replace(/[^0-9]/g, '');
+      const idClean = s.id.toLowerCase();
+      const nameClean = s.studentName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return phoneClean.includes(cleanQuery) || waClean.includes(cleanQuery) || idClean === cleanQuery || nameClean.includes(cleanQuery);
+    });
+  },
 };
 
 // Named Helper Exports
@@ -744,6 +845,11 @@ export const saveUserAccount = db.saveUserAccount;
 export const findUserAccount = db.findUserAccount;
 export const addBulkTestResults = db.addBulkTestResults;
 export const getPendingFeeStudents = db.getPendingFeeStudents;
+export const getPtmBookings = db.getPtmBookings;
+export const addPtmBooking = db.addPtmBooking;
+export const getCommunityMetrics = db.getCommunityMetrics;
+export const getStudentByPhoneOrId = db.getStudentByPhoneOrId;
+
 
 
 

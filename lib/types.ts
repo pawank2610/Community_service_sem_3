@@ -282,3 +282,37 @@ export interface QuizResult {
   percentage: number;
   date: string;
 }
+
+export interface CommunityImpactMetric {
+  id: string;
+  label: string;
+  value: string;
+  change: string;
+  description: string;
+  sdgTag: 'SDG 4' | 'SDG 8' | 'SDG 9';
+}
+
+export interface PtmBooking {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentName: string;
+  parentPhone: string;
+  preferredTeacher: string;
+  preferredSlot: string;
+  concernArea: string;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED';
+  createdAt: string;
+}
+
+export interface MarketingPosterConfig {
+  templateId: 'free-trial' | 'cbse-boards' | 'foundation' | 'table-standee';
+  headline: string;
+  subheadline: string;
+  highlightOffer: string;
+  targetClasses: string;
+  batchStartDate: string;
+  qrDestination: 'free-trial' | 'google-review' | 'whatsapp';
+  accentColor: string;
+}
+

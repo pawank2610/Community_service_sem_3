@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
   BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone,
-  Lock, KeyRound, Mail
+  Lock, KeyRound, Mail, Award, Sparkles
 } from 'lucide-react';
 import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt, getPendingFeeStudents } from '@/lib/db';
 import { 
@@ -446,6 +447,34 @@ export default function AdminDashboardView() {
               );
             })}
           </nav>
+
+          {/* Quick Studio & Community Links */}
+          <div className="pt-4 border-t border-slate-800 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block px-2">
+              Public Hubs & Studios
+            </span>
+            <Link
+              href="/marketing"
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-amber-400 hover:bg-slate-800 transition"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Marketing & QR Studio</span>
+            </Link>
+            <Link
+              href="/parent"
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+            >
+              <Users className="w-3.5 h-3.5 text-prime-orange" />
+              <span>Parent Quick Portal</span>
+            </Link>
+            <Link
+              href="/impact"
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+            >
+              <Award className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Community Impact (SDG)</span>
+            </Link>
+          </div>
         </div>
 
         <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-400">
@@ -489,6 +518,42 @@ export default function AdminDashboardView() {
                 <div className="text-xs font-bold text-slate-500 uppercase">Available Trial Slots</div>
                 <div className="text-3xl font-black text-prime-orange mt-2">{settings.trialSlotsAvailable}</div>
                 <div className="text-[11px] text-slate-500 mt-1">Configurable in settings</div>
+              </div>
+            </div>
+
+            {/* Community Service & Marketing Quick Hub */}
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-5 text-white flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-700 shadow-md">
+              <div className="flex items-center space-x-3 text-center md:text-left">
+                <div className="w-10 h-10 rounded-xl bg-prime-orange/20 border border-prime-orange flex items-center justify-center text-prime-orange shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Sem-3 Community Service Project Hub</h3>
+                  <p className="text-xs text-slate-300">
+                    Track SDG impact metrics, print academic submission reports, and generate marketing QR posters.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <Link
+                  href="/impact"
+                  className="px-3.5 py-2 rounded-xl bg-prime-orange hover:bg-prime-orange-hover text-white font-bold text-xs shadow transition"
+                >
+                  View SDG Impact Report
+                </Link>
+                <Link
+                  href="/marketing"
+                  className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs border border-slate-600 transition"
+                >
+                  Marketing & QR Studio
+                </Link>
+                <Link
+                  href="/parent"
+                  className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs border border-slate-600 transition"
+                >
+                  Parent Portal
+                </Link>
               </div>
             </div>
 
