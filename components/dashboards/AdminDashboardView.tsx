@@ -16,12 +16,14 @@ import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/const
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
+import TrialPassModal from '@/components/TrialPassModal';
 
 export default function AdminDashboardView() {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'leaves' | 'doubts' | 'broadcast' | 'settings'
   >('overview');
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedTrialForPass, setSelectedTrialForPass] = useState<TrialRegistration | null>(null);
   
   // Data states
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
@@ -838,7 +840,24 @@ export default function AdminDashboardView() {
                             <option value="Not Converted">Not Converted</option>
                           </select>
                         </td>
-                        <td className="p-4 flex items-center space-x-2">
+                        <td className="p-4 flex items-center space-x-1.5">
+                          <button
+                            onClick={() => setSelectedTrialForPass(tr)}
+                            className="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                            title="Print Demo Class Admit Pass"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const msg = `Hello ${tr.parentName || 'Parent'}, this is Praveen Sir & Rashmi Ma'am from Prime Learning Classes (Sec-22B Gurgaon).\n\nWe wanted to share positive feedback regarding ${tr.studentName}'s free demo class in ${tr.subject}.\n${tr.studentName} demonstrated strong conceptual interest! Would you like to confirm their regular enrollment?\n\nDetails: https://primelearning.edu.in/parent | Helpline: +91 98109 89437`;
+                              window.open(getWhatsAppLink(tr.whatsapp || tr.phone, msg), '_blank');
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition"
+                            title="WhatsApp Parent Follow-up"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
                           <button onClick={() => handleDeleteTrial(tr.id)} className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200" title="Delete">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -2033,6 +2052,12 @@ export default function AdminDashboardView() {
             onClose={() => setQrModalOpen(false)}
           />
         )}
+
+        <TrialPassModal
+          isOpen={!!selectedTrialForPass}
+          onClose={() => setSelectedTrialForPass(null)}
+          trial={selectedTrialForPass}
+        />
 
       </main>
     </div>

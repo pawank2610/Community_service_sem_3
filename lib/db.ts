@@ -251,7 +251,15 @@ export const db = {
     setStoredData('trials', updated);
     return newTrial;
   },
-  updateTrialStatus: (id: string, status: TrialRegistration['status'], notes?: string, trialDate?: string): TrialRegistration[] => {
+  updateTrialStatus: (
+    id: string, 
+    status: TrialRegistration['status'], 
+    notes?: string, 
+    trialDate?: string,
+    attendanceStatus?: TrialRegistration['attendanceStatus'],
+    feedbackNotes?: string,
+    conversionProbability?: TrialRegistration['conversionProbability']
+  ): TrialRegistration[] => {
     const current = getStoredData<TrialRegistration[]>('trials', MOCK_TRIALS);
     const updated = current.map(tr => {
       if (tr.id === id) {
@@ -260,6 +268,9 @@ export const db = {
           status,
           notes: notes !== undefined ? notes : tr.notes,
           trialDate: trialDate !== undefined ? trialDate : tr.trialDate,
+          attendanceStatus: attendanceStatus !== undefined ? attendanceStatus : tr.attendanceStatus,
+          feedbackNotes: feedbackNotes !== undefined ? feedbackNotes : tr.feedbackNotes,
+          conversionProbability: conversionProbability !== undefined ? conversionProbability : tr.conversionProbability,
         };
       }
       return tr;

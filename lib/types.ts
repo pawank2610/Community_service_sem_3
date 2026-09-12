@@ -110,6 +110,10 @@ export interface TrialRegistration {
   status: TrialStatus;
   createdAt: string;
   notes?: string;
+  attendanceStatus?: 'Pending' | 'Attended' | 'Absent' | 'Rescheduled';
+  feedbackNotes?: string;
+  conversionProbability?: 'High' | 'Medium' | 'Low' | 'Converted';
+  followUpDate?: string;
 }
 
 export interface Student {
