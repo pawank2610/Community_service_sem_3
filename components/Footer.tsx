@@ -71,6 +71,15 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
+                  href="/local-search" 
+                  className="hover:text-white inline-flex items-center transition text-slate-300 hover:text-white"
+                >
+                  <ArrowRight className="w-3 h-3 text-prime-orange mr-2" />
+                  Google Maps & Local SEO
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/marketing" 
                   className="hover:text-white inline-flex items-center transition text-slate-300 hover:text-white"
                 >

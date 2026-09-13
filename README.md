@@ -1,7 +1,8 @@
 # Prime Learning Classes
 
-A modern, full-featured educational platform and institutional management system built for **Prime Learning Classes** — a coaching institute in Sec-22B, Gurgaon. The platform serves as a public-facing marketing site, a student learning portal, a teacher operations dashboard, and an admin CRM — all in one application.
+A modern, full-featured educational platform and institutional management system built for **Prime Learning Classes** — a coaching institute in Sec-22B, Gurgaon. Built as a Community Service Project (Semester 3) for the digital empowerment of local educators.
 
+[![Community Service Project](https://img.shields.io/badge/Community%20Service-Semester%203%20Report-blue?style=for-the-badge)](COMMUNITY_SERVICE_REPORT.md)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![React](https://img.shields.io/badge/React-19-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
@@ -9,11 +10,14 @@ A modern, full-featured educational platform and institutional management system
 ![Supabase](https://img.shields.io/badge/Supabase-DB-3ecf8e)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth-ffca28)
 
+> 📘 **Official Report Available**: Read the complete field and academic report in [COMMUNITY_SERVICE_REPORT.md](COMMUNITY_SERVICE_REPORT.md) covering teacher diagnosis, local SEO metrics, trial conversions, and UN SDG mappings (SDG 4, 8, 9).
+
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Community Service Academic Report](#community-service-academic-report)
 - [Key Features](#key-features)
   - [Student Portal](#student-portal)
   - [Teacher Portal](#teacher-portal)
@@ -348,8 +352,12 @@ npm run lint
 | `/login` | Role-based login (Student / Teacher / Admin) |
 | `/student` | Student dashboard (after login) |
 | `/teacher` | Teacher dashboard (after login) |
-| `/admin` | Admin CRM dashboard (after login) |
+| `/admin` | Admin CRM dashboard with trial conversion & attendance logging |
 | `/free-trial` | Free trial registration page |
+| `/local-search` | Google Business Profile simulator, 1-click review assistant & NAP audit |
+| `/marketing` | Marketing Studio with customizable flyers, notice board banners & QR standees |
+| `/parent` | Dedicated parent dashboard with PTM slot booking, fee ledger & absentee alerts |
+| `/impact` | Community Service & UN SDG Impact showcase (SDG 4, 8, 9) |
 
 ---
 
@@ -358,6 +366,7 @@ npm run lint
 ### Modals
 - **EnquiryModal** — General lead capture with course pre-selection
 - **TrialForm** — Free trial registration with parent/student details
+- **TrialPassModal** — Printable Free Trial Admit Pass with QR verification code
 - **PracticeQuizModal** — Interactive quiz with timer, scoring, and explanations
 - **DoubtResolverModal** — AI chat interface powered by Gemini
 - **QRAttendanceModal** — Generates unique QR codes for student check-in
