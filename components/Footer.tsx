@@ -75,7 +75,7 @@ export default function Footer() {
                   className="hover:text-white inline-flex items-center transition text-slate-300 hover:text-white"
                 >
                   <ArrowRight className="w-3 h-3 text-prime-orange mr-2" />
-                  Google Maps & Local SEO
+                  Location & Reviews
                 </Link>
               </li>
               <li>

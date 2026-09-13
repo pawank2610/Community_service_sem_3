@@ -45,7 +45,7 @@ export const NAV_LINKS = [
   { label: 'Courses', href: '/courses' },
   { label: 'Fees & Timings', href: '/fees' },
   { label: 'Parent Portal', href: '/parent' },
-  { label: 'Local Maps & SEO', href: '/local-search' },
+  { label: 'Location & Reviews', href: '/local-search' },
   { label: 'Marketing Kit', href: '/marketing' },
   { label: 'Community Impact', href: '/impact' },
   { label: 'Contact', href: '/contact' },
