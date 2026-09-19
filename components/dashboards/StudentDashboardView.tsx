@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Calendar, CheckCircle2, FileText, Download, MessageSquare, Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, ChevronRight, Video, HelpCircle, Printer, Target, BookOpen } from 'lucide-react';
+import { 
+  User, Calendar, CheckCircle2, FileText, Download, MessageSquare, 
+  Bell, Award, Sparkles, QrCode, CreditCard, Clock, Brain, AlertTriangle, 
+  ChevronRight, Video, HelpCircle, Printer, Target, BookOpen, ShieldCheck, 
+  Layers, Compass
+} from 'lucide-react';
 import { db, getBadges, getLeaveRequests, getVideoLessons, getDoubts, getQuizResults, getPayments } from '@/lib/db';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import QRScannerModal from '@/components/QRScannerModal';
@@ -10,6 +15,11 @@ import LeaveRequestModal from '@/components/LeaveRequestModal';
 import PracticeQuizModal from '@/components/PracticeQuizModal';
 import ReportCardModal from '@/components/ReportCardModal';
 import DoubtResolverModal from '@/components/DoubtResolverModal';
+import StudentIDCardModal from '@/components/StudentIDCardModal';
+import SmartStudyPlannerModal from '@/components/SmartStudyPlannerModal';
+import FormulaFlashcardsModal from '@/components/FormulaFlashcardsModal';
+import AcademicCalendarModal from '@/components/AcademicCalendarModal';
+import CBSEChapterTracker from '@/components/CBSEChapterTracker';
 
 export default function StudentDashboardView() {
   const [mounted, setMounted] = useState(false);
@@ -21,6 +31,11 @@ export default function StudentDashboardView() {
   const [reportCardOpen, setReportCardOpen] = useState(false);
   const [doubtModalOpen, setDoubtModalOpen] = useState(false);
   const [videoVaultOpen, setVideoVaultOpen] = useState(false);
+  const [idCardOpen, setIdCardOpen] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showSyllabusTracker, setShowSyllabusTracker] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {
@@ -207,6 +222,93 @@ export default function StudentDashboardView() {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Feature Launchpad Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            onClick={() => setPlannerOpen(true)}
+            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-prime-orange hover:shadow-md transition text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-prime-orange text-white flex items-center justify-center font-black mb-2 shadow-xs group-hover:scale-105 transition transform">
+              <Target className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-black text-slate-900 group-hover:text-prime-orange transition">
+              AI Study Plan
+            </div>
+            <div className="text-[10px] text-slate-500">Board exam countdown & 7-day revision</div>
+          </button>
+
+          <button
+            onClick={() => setIdCardOpen(true)}
+            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-blue-500 hover:shadow-md transition text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black mb-2 shadow-xs group-hover:scale-105 transition transform">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-black text-slate-900 group-hover:text-blue-600 transition">
+              Student ID Card
+            </div>
+            <div className="text-[10px] text-slate-500">Official printable PVC digital badge</div>
+          </button>
+
+          <button
+            onClick={() => setFlashcardsOpen(true)}
+            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-md transition text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white flex items-center justify-center font-black mb-2 shadow-xs group-hover:scale-105 transition transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition">
+              Formula Cards
+            </div>
+            <div className="text-[10px] text-slate-500">3D flip active recall formula deck</div>
+          </button>
+
+          <button
+            onClick={() => setCalendarOpen(true)}
+            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-purple-500 hover:shadow-md transition text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center font-black mb-2 shadow-xs group-hover:scale-105 transition transform">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-black text-slate-900 group-hover:text-purple-600 transition">
+              Test Schedule
+            </div>
+            <div className="text-[10px] text-slate-500">Weekly tests, workshops & PTMs</div>
+          </button>
+        </div>
+
+        {/* Expandable CBSE Chapter Mastery Section */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-prime-orange-light text-prime-orange flex items-center justify-center font-black">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  CBSE Class 10 NCERT Chapter Mastery
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Track board marks weightage, formulas, and teacher tips for your batch.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowSyllabusTracker(!showSyllabusTracker)}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-prime-orange bg-prime-orange-light hover:bg-prime-orange/20 transition self-start sm:self-center"
+            >
+              {showSyllabusTracker ? 'Hide Chapter Tracker ▲' : 'Open Chapter Tracker ▼'}
+            </button>
+          </div>
+
+          {showSyllabusTracker && (
+            <div className="pt-4 border-t border-slate-100 animate-fadeIn">
+              <CBSEChapterTracker initialGrade={student.grade} initialSubject="All" />
+            </div>
+          )}
         </div>
 
         {/* Main 2-Column Grid */}
@@ -660,6 +762,31 @@ export default function StudentDashboardView() {
           onSubmitted={() => {
             setRefreshKey(k => k + 1);
           }}
+        />
+
+        <StudentIDCardModal
+          isOpen={idCardOpen}
+          onClose={() => setIdCardOpen(false)}
+          studentId={student.id}
+        />
+
+        <SmartStudyPlannerModal
+          isOpen={plannerOpen}
+          onClose={() => setPlannerOpen(false)}
+          studentId={student.id}
+          studentName={student.studentName}
+        />
+
+        <FormulaFlashcardsModal
+          isOpen={flashcardsOpen}
+          onClose={() => setFlashcardsOpen(false)}
+          initialSubject="All"
+        />
+
+        <AcademicCalendarModal
+          isOpen={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          isTeacherMode={false}
         />
 
       </div>

@@ -43,6 +43,7 @@ export const NAV_LINKS = [
   { label: 'About', href: '/about' },
   { label: 'Teachers', href: '/teachers' },
   { label: 'Courses', href: '/courses' },
+  { label: 'Syllabus', href: '/syllabus' },
   { label: 'Fees & Timings', href: '/fees' },
   { label: 'Parent Portal', href: '/parent' },
   { label: 'Location & Reviews', href: '/local-search' },

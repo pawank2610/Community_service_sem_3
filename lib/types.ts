@@ -320,3 +320,92 @@ export interface MarketingPosterConfig {
   accentColor: string;
 }
 
+export type ChapterStatus = 'Not Started' | 'In Progress' | 'Completed' | 'Revision Needed';
+
+export interface SyllabusChapter {
+  id: string;
+  grade: string; // e.g. 'Class 10', 'Class 9'
+  subject: string; // e.g. 'Mathematics', 'Science'
+  chapterNo: number;
+  title: string;
+  weightageMarks: number; // e.g. 8
+  status: ChapterStatus;
+  keyFormulas: string[];
+  examTips: string;
+  ncertExercisesCount: number;
+  updatedAt?: string;
+}
+
+export interface StudyPlanDay {
+  dayNumber: number;
+  date: string;
+  subject: string;
+  chapter: string;
+  tasks: string[];
+  durationMinutes: number;
+  completed: boolean;
+}
+
+export interface StudyPlanSchedule {
+  id: string;
+  studentId: string;
+  studentName: string;
+  examName: string;
+  targetDate: string;
+  dailyHours: number;
+  prioritySubject: string;
+  weakTopics: string[];
+  planDays: StudyPlanDay[];
+  createdAt: string;
+}
+
+export interface StudentIdCard {
+  studentId: string;
+  rollNo: string;
+  studentName: string;
+  grade: string;
+  batchName: string;
+  emergencyPhone: string;
+  bloodGroup: string;
+  validTill: string;
+  qrCodeData: string;
+}
+
+export type ExpenseCategory = 'Rent' | 'Utilities & Electricity' | 'Printing & Question Banks' | 'Marketing & Flyers' | 'Faculty Honorarium' | 'Miscellaneous';
+
+export interface ExpenseRecord {
+  id: string;
+  title: string;
+  category: ExpenseCategory;
+  amount: number;
+  date: string;
+  paidTo?: string;
+  paymentMethod: 'UPI' | 'CASH' | 'NETBANKING';
+  receiptRef?: string;
+}
+
+export type AcademicEventType = 'TEST' | 'PTM' | 'HOLIDAY' | 'WORKSHOP' | 'BOARD_PRACTICAL';
+
+export interface AcademicEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time?: string;
+  eventType: AcademicEventType;
+  description: string;
+  targetGrade: string;
+  venue?: string;
+}
+
+export interface FormulaFlashcard {
+  id: string;
+  subject: 'Mathematics' | 'Science';
+  grade: string;
+  chapter: string;
+  title: string;
+  frontQuestion: string;
+  backAnswer: string;
+  keyFormula: string;
+  examNote: string;
+}
+

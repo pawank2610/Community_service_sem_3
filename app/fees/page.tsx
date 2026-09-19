@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import EnquiryModal from '@/components/EnquiryModal';
 import TrialForm from '@/components/TrialForm';
 import FeePaymentModal from '@/components/FeePaymentModal';
+import FeeCalculator from '@/components/FeeCalculator';
 import { getWhatsAppLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 
 export default function FeesPage() {
@@ -34,6 +35,14 @@ export default function FeesPage() {
             Affordable, transparent monthly fee schedule with no hidden charges. All course plans include personal doubt-clearing and study material.
           </p>
         </div>
+      </section>
+
+      {/* Interactive Fee & Scholarship Calculator */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <FeeCalculator 
+          onBookTrial={() => setTrialModalOpen(true)}
+          onPayFee={() => setFeePaymentOpen(true)}
+        />
       </section>
 
       {/* Comparison Table Section */}

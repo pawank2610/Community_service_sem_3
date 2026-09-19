@@ -4,16 +4,19 @@ import React, { useState } from 'react';
 import { 
   Users, CheckCircle2, FileText, Calendar, BookOpen, User, QrCode, 
   MessageSquare, Clock, Check, X, HelpCircle, Send, Upload, Megaphone, 
-  FileSpreadsheet, AlertCircle, Share2, Plus, Download 
+  FileSpreadsheet, AlertCircle, Share2, Plus, Download, Layers, Sparkles 
 } from 'lucide-react';
 import { db, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt, addBulkTestResults } from '@/lib/db';
 import { Student, Batch, StudyMaterial, Announcement } from '@/lib/types';
 import { getWhatsAppLink } from '@/lib/constants';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
+import CBSEChapterTracker from '@/components/CBSEChapterTracker';
+import AcademicCalendarModal from '@/components/AcademicCalendarModal';
 
 export default function TeacherDashboardView() {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'materials' | 'announcements' | 'leaves' | 'doubts'>('batches');
+  const [activeTab, setActiveTab] = useState<'batches' | 'attendance' | 'marks' | 'materials' | 'announcements' | 'leaves' | 'doubts' | 'syllabus' | 'calendar'>('batches');
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const batches = db.getBatches();
   const students = db.getStudents();
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0]?.id || '');
@@ -232,10 +235,12 @@ export default function TeacherDashboardView() {
         <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
           {[
             { id: 'batches', label: 'My Batches', icon: BookOpen },
+            { id: 'syllabus', label: 'Syllabus Tracker', icon: Layers },
             { id: 'attendance', label: 'Attendance & Alerts', icon: CheckCircle2 },
             { id: 'marks', label: 'Batch Marks Entry', icon: FileSpreadsheet },
             { id: 'materials', label: 'Upload Materials', icon: Upload },
             { id: 'announcements', label: 'Announcements', icon: Megaphone },
+            { id: 'calendar', label: 'Academic Calendar', icon: Calendar },
             { id: 'leaves', label: 'Leave Requests', icon: Clock },
             { id: 'doubts', label: `Student Doubts (${getDoubts().filter(d=>d.status==='PENDING').length})`, icon: HelpCircle },
           ].map(tab => (
@@ -872,6 +877,50 @@ export default function TeacherDashboardView() {
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {/* TAB 8: SYLLABUS TRACKER */}
+        {activeTab === 'syllabus' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-xs text-amber-900 flex items-start space-x-2.5">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Faculty Curriculum Controls:</span> Click the status buttons (<strong>Done</strong>, <strong>Active</strong>, <strong>Revise</strong>, <strong>Pending</strong>) on any chapter below to instantly update progress across student dashboards and the public course syllabus.
+              </div>
+            </div>
+
+            <CBSEChapterTracker 
+              initialGrade={selectedBatch?.grade || 'Class 10'} 
+              initialSubject={selectedBatch?.subject.includes('Math') ? 'Mathematics' : selectedBatch?.subject.includes('Science') ? 'Science' : 'All'}
+              isTeacherMode={true} 
+              onStatusChange={() => showNotification('Chapter completion status updated!')}
+            />
+          </div>
+        )}
+
+        {/* TAB 9: ACADEMIC CALENDAR */}
+        {activeTab === 'calendar' && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Institute Academic Schedule</h3>
+                <p className="text-xs text-slate-500">Plan mock tests, Sunday doubt marathons, and board practical simulations.</p>
+              </div>
+              <button
+                onClick={() => setCalendarModalOpen(true)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-prime-orange hover:bg-prime-orange-hover transition shadow flex items-center space-x-1.5"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Open Calendar Manager</span>
+              </button>
+            </div>
+
+            <AcademicCalendarModal
+              isOpen={calendarModalOpen || activeTab === 'calendar'}
+              onClose={() => setCalendarModalOpen(false)}
+              isTeacherMode={true}
+            />
           </div>
         )}
 

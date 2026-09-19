@@ -5,25 +5,29 @@ import Link from 'next/link';
 import { 
   Users, MessageSquare, GraduationCap, CheckCircle2, Phone, Calendar, 
   BookOpen, Clock, Settings, Plus, Filter, Search, FileText, BarChart3, Edit, Save, ArrowRight, QrCode, Trash2, X, Bell, Download, CreditCard, HelpCircle, Send, Megaphone,
-  Lock, KeyRound, Mail, Award, Sparkles
+  Lock, KeyRound, Mail, Award, Sparkles, IndianRupee, ShieldCheck
 } from 'lucide-react';
-import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt, getPendingFeeStudents } from '@/lib/db';
+import { db, getPayments, getLeaveRequests, updateLeaveStatus, getDoubts, replyDoubt, getPendingFeeStudents, getExpenses, addExpense, deleteExpense } from '@/lib/db';
 import { 
   Enquiry, TrialRegistration, Student, Batch, Course, Teacher, 
-  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial, StudentDoubt 
+  AttendanceRecord, TestResult, InstituteSettings, EnquiryStatus, TrialStatus, Announcement, StudyMaterial, StudentDoubt,
+  ExpenseRecord, ExpenseCategory 
 } from '@/lib/types';
 import { getWhatsAppLink, getTelLink, CONTEXTUAL_WA_MESSAGES } from '@/lib/constants';
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import QRAttendanceModal from '@/components/QRAttendanceModal';
 import TrialPassModal from '@/components/TrialPassModal';
+import StudentIDCardModal from '@/components/StudentIDCardModal';
 
 export default function AdminDashboardView() {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'leaves' | 'doubts' | 'broadcast' | 'settings'
+    'overview' | 'enquiries' | 'trials' | 'students' | 'teachers' | 'batches' | 'courses' | 'announcements' | 'materials' | 'attendance' | 'marks' | 'payments' | 'expenses' | 'leaves' | 'doubts' | 'broadcast' | 'settings'
   >('overview');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedTrialForPass, setSelectedTrialForPass] = useState<TrialRegistration | null>(null);
+  const [selectedStudentForIdCard, setSelectedStudentForIdCard] = useState<Student | null>(null);
+  const [idCardModalOpen, setIdCardModalOpen] = useState(false);
   
   // Data states
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
@@ -40,6 +44,19 @@ export default function AdminDashboardView() {
   const [payments, setPayments] = useState(getPayments());
   const [leaveRequests, setLeaveRequestsState] = useState(getLeaveRequests());
   const [doubtsState, setDoubtsState] = useState<StudentDoubt[]>(getDoubts());
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
+
+  // Expense modal state
+  const [addExpenseModal, setAddExpenseModal] = useState(false);
+  const [newExpense, setNewExpense] = useState({
+    title: '',
+    category: 'Rent' as ExpenseCategory,
+    amount: 2500,
+    date: new Date().toISOString().split('T')[0],
+    paidTo: '',
+    paymentMethod: 'UPI' as const,
+    receiptRef: '',
+  });
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,6 +129,33 @@ export default function AdminDashboardView() {
     setPayments(getPayments());
     setLeaveRequestsState(getLeaveRequests());
     setDoubtsState(getDoubts());
+    setExpenses(db.getExpenses());
+  };
+
+  const handleAddExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExpense.title.trim() || newExpense.amount <= 0) return;
+    addExpense(newExpense);
+    setAddExpenseModal(false);
+    setNewExpense({
+      title: '',
+      category: 'Rent' as ExpenseCategory,
+      amount: 2500,
+      date: new Date().toISOString().split('T')[0],
+      paidTo: '',
+      paymentMethod: 'UPI',
+      receiptRef: '',
+    });
+    refreshData();
+    showToast('Recorded operational expense in ledger!');
+  };
+
+  const handleDeleteExpense = (id: string, title: string) => {
+    if (confirm(`Are you sure you want to delete expense "${title}"?`)) {
+      deleteExpense(id);
+      refreshData();
+      showToast('Expense entry deleted.');
+    }
   };
 
   const showToast = (msg: string) => {
@@ -417,6 +461,7 @@ export default function AdminDashboardView() {
               { id: 'batches', label: 'Batches & Timings', icon: Clock },
               { id: 'courses', label: 'Courses & Fees', icon: BookOpen },
               { id: 'payments', label: `Fee Ledger (${payments.length})`, icon: CreditCard },
+              { id: 'expenses', label: `Financial Health (${expenses.length})`, icon: IndianRupee },
               { id: 'leaves', label: `Leave Requests (${leaveRequests.filter(l=>l.status==='PENDING').length})`, icon: Calendar, badge: leaveRequests.filter(l=>l.status==='PENDING').length > 0 },
               { id: 'doubts', label: `Student Doubts (${doubtsState.filter(d=>d.status==='PENDING').length})`, icon: HelpCircle, badge: doubtsState.filter(d=>d.status==='PENDING').length > 0 },
               { id: 'broadcast', label: 'WhatsApp Broadcaster', icon: Megaphone },
@@ -912,7 +957,18 @@ export default function AdminDashboardView() {
                       <td className="p-4 font-semibold text-prime-orange">{st.batchName}</td>
                       <td className="p-4 font-semibold">{st.teacherName}</td>
                       <td className="p-4">{st.phone}</td>
-                      <td className="p-4">
+                      <td className="p-4 flex items-center space-x-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedStudentForIdCard(st);
+                            setIdCardModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition flex items-center space-x-1"
+                          title="Generate & Print Official Student ID Badge"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span className="text-[10px]">ID Pass</span>
+                        </button>
                         <button
                           onClick={() => handleDeleteStudent(st.id, st.studentName)}
                           className="p-1.5 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 font-bold"
@@ -1469,6 +1525,141 @@ export default function AdminDashboardView() {
             )}
           </div>
         )}
+
+        {/* TAB: FINANCIAL HEALTH & EXPENSE LEDGER */}
+        {activeTab === 'expenses' && (() => {
+          const totalFeeRevenue = payments.reduce((sum, p) => sum + (parseInt(p.amount.replace(/[^0-9]/g, '')) || 0), 0) || 50000;
+          const totalOperatingExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+          const netOperatingMargin = totalFeeRevenue - totalOperatingExpenses;
+          const marginPercent = totalFeeRevenue > 0 ? Math.round((netOperatingMargin / totalFeeRevenue) * 100) : 0;
+
+          return (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900">Institute Financial Health & Expenses</h1>
+                  <p className="text-xs text-slate-500">
+                    Track center rent, utility bills, study material printing, and net operating margin in Sec-22B Gurgaon
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setAddExpenseModal(true)}
+                  className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Record Center Expense</span>
+                </button>
+              </div>
+
+              {/* Top 3 Financial Health Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tuition Fee Revenue</div>
+                    <div className="text-2xl font-black text-emerald-600 mt-1">
+                      ₹{totalFeeRevenue.toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Based on {payments.length} student fee collections</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Center Operating Costs</div>
+                    <div className="text-2xl font-black text-rose-600 mt-1">
+                      ₹{totalOperatingExpenses.toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Rent, AC power, Xerox & Marketing</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Net Operating Surplus</div>
+                    <div className="text-2xl font-black text-slate-900 mt-1">
+                      ₹{netOperatingMargin.toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+                      {marginPercent}% Healthy Operating Margin
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
+                    <BarChart3 className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Expense Breakdown Categories */}
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                {[
+                  { label: 'Center Rent (Sec-22B)', val: '₹18,000 / mo', status: 'Fixed Cost' },
+                  { label: 'Electricity & AC', val: '₹3,450 / mo', status: 'Utilities' },
+                  { label: 'Question Bank Xerox', val: '₹2,200 / mo', status: 'Academic Materials' },
+                  { label: 'Marketing & Standees', val: '₹1,800 / mo', status: 'Local Promotion' },
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">{item.status}</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{item.label}</div>
+                    <div className="text-xs font-black text-prime-orange mt-1">{item.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Expenses Table */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Expense Title & Purpose</th>
+                      <th className="p-4">Category</th>
+                      <th className="p-4">Amount</th>
+                      <th className="p-4">Paid To</th>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Method & Ref</th>
+                      <th className="p-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {expenses.map(exp => (
+                      <tr key={exp.id} className="hover:bg-slate-50/80">
+                        <td className="p-4 font-bold text-slate-900">{exp.title}</td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td className="p-4 font-black text-rose-600 text-sm">
+                          ₹{exp.amount.toLocaleString('en-IN')}
+                        </td>
+                        <td className="p-4 text-slate-700">{exp.paidTo || 'N/A'}</td>
+                        <td className="p-4">{exp.date}</td>
+                        <td className="p-4 font-mono text-[11px] text-slate-500">
+                          {exp.paymentMethod} {exp.receiptRef ? `• ${exp.receiptRef}` : ''}
+                        </td>
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleDeleteExpense(exp.id, exp.title)}
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition"
+                            title="Delete Expense Entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* TAB: LEAVE REQUESTS */}
         {activeTab === 'leaves' && (
@@ -2058,6 +2249,136 @@ export default function AdminDashboardView() {
           onClose={() => setSelectedTrialForPass(null)}
           trial={selectedTrialForPass}
         />
+
+        {/* Add Center Expense Modal */}
+        {addExpenseModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-prime-orange uppercase tracking-wider">
+                    Finance Ledger
+                  </span>
+                  <h2 className="text-lg font-extrabold text-slate-900">Record Operational Expense</h2>
+                </div>
+                <button onClick={() => setAddExpenseModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              </div>
+
+              <form onSubmit={handleAddExpense} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Expense Title / Description *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="e.g. October Center Rent or Xerox Printing" 
+                    value={newExpense.title} 
+                    onChange={(e) => setNewExpense({ ...newExpense, title: e.target.value })} 
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Category</label>
+                    <select
+                      value={newExpense.category}
+                      onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value as any })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    >
+                      <option value="Rent">Rent</option>
+                      <option value="Utilities & Electricity">Utilities & AC</option>
+                      <option value="Printing & Question Banks">Xerox & Materials</option>
+                      <option value="Marketing & Flyers">Marketing & Standees</option>
+                      <option value="Faculty Honorarium">Faculty Honorarium</option>
+                      <option value="Miscellaneous">Miscellaneous</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Amount (₹) *</label>
+                    <input 
+                      type="number" 
+                      required 
+                      min="1"
+                      value={newExpense.amount} 
+                      onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })} 
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-black" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Paid To / Vendor</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Om Stationery" 
+                      value={newExpense.paidTo} 
+                      onChange={(e) => setNewExpense({ ...newExpense, paidTo: e.target.value })} 
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Date</label>
+                    <input 
+                      type="date" 
+                      required 
+                      value={newExpense.date} 
+                      onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })} 
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Payment Method</label>
+                    <select
+                      value={newExpense.paymentMethod}
+                      onChange={(e) => setNewExpense({ ...newExpense, paymentMethod: e.target.value as any })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    >
+                      <option value="UPI">UPI (GPay / PhonePe)</option>
+                      <option value="CASH">Cash</option>
+                      <option value="NETBANKING">NetBanking</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase mb-1">Receipt / Invoice Ref</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. INV-9921" 
+                      value={newExpense.receiptRef} 
+                      onChange={(e) => setNewExpense({ ...newExpense, receiptRef: e.target.value })} 
+                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white" 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="w-full py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-prime-orange transition shadow"
+                >
+                  Save Expense Entry
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Student ID Card Modal */}
+        {selectedStudentForIdCard && (
+          <StudentIDCardModal
+            isOpen={idCardModalOpen}
+            onClose={() => {
+              setIdCardModalOpen(false);
+              setSelectedStudentForIdCard(null);
+            }}
+            studentId={selectedStudentForIdCard.id}
+          />
+        )}
 
       </main>
     </div>
