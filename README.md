@@ -358,12 +358,13 @@ npm run lint
 | `/marketing` | Marketing Studio with customizable flyers, notice board banners & QR standees |
 | `/parent` | Dedicated parent dashboard with PTM slot booking, fee ledger & absentee alerts |
 | `/impact` | Community Service & UN SDG Impact showcase (SDG 4, 8, 9) |
+| `/syllabus` | CBSE syllabus breakdown, chapter roadmap, and weightage guide |
 
 ---
 
 ## Key Components
 
-### Modals
+### Modals & Interactive Tools
 - **EnquiryModal** — General lead capture with course pre-selection
 - **TrialForm** — Free trial registration with parent/student details
 - **TrialPassModal** — Printable Free Trial Admit Pass with QR verification code
@@ -372,6 +373,12 @@ npm run lint
 - **QRAttendanceModal** — Generates unique QR codes for student check-in
 - **QRScannerModal** — Camera-based QR scanner for teacher attendance logging
 - **FeePaymentModal** — Razorpay payment flow with receipt generation
+- **FeeCalculator** — Interactive fee calculator with installment plans, sibling discounts, and scholarships
+- **CBSEChapterTracker** — Chapter-wise completion tracker and revision milestone manager
+- **SmartStudyPlannerModal** — AI-assisted personalized study routine and timetable generator
+- **StudentIDCardModal** — Digital student identity card with verification QR and print preview
+- **FormulaFlashcardsModal** — Interactive formula flashcard deck for Physics, Chemistry, and Math
+- **AcademicCalendarModal** — Academic year planner with CBSE exam schedules, unit tests, and holidays
 - **LeaveRequestModal** — Leave application with makeup class scheduling
 - **ReportCardModal** — Visual report card with subject-wise breakdown
 
@@ -496,3 +503,5 @@ Private & Proprietary — Developed for **Prime Learning Classes**.
 ---
 
 Built with care for students, teachers, and administrators.
+
+*Last updated: September 20, 2026*
